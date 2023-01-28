@@ -1,12 +1,11 @@
 nodes:
 - input.visual:
-    source: single_person.mp4
-    #source: 0
+    source: 0
 - model.yolo
 - model.posenet
-- dabble.fps
-#- custom_nodes.dabble.wave --> we use this as reference
+# - dabble.fps
+- custom_nodes.dabble.joint_coordinates # --> we use this as reference
 - draw.poses
-- draw.legend:
-    show: ["fps"]
+# - draw.legend:
+#     show: ["fps"]
 - output.screen
