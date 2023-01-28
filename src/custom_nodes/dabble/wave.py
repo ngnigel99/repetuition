@@ -3,6 +3,7 @@ Custom node to show keypoints and count the number of times the person's hand is
 """
 
 from typing import Any, Dict, List, Tuple
+# import time
 import cv2
 from peekingduck.pipeline.nodes.abstract_node import AbstractNode
 
@@ -75,6 +76,10 @@ def draw_text(img, x, y, text_str: str, color_code):
       thickness=2,
    )
 
+'''
+# input time in seconds
+TIMEZ = int(input("Enter the time in seconds: "))
+'''
 
 class Node(AbstractNode):
    """Custom node to display keypoints and count number of hand waves
@@ -110,6 +115,22 @@ class Node(AbstractNode):
       keypoint_scores = inputs["keypoint_scores"]
 
       img_size = (img.shape[1], img.shape[0])  # image width, height
+      
+      '''
+      def countdown(t):
+         while t > 0:
+            mins, secs = divmod(t, 60)
+            timer = '{:02d}:{:02d}'.format(mins, secs)
+            print(t)
+            t -= 1
+
+         print("Time's up!")
+
+      time_now = countdown(TIMEZ)
+
+      time_str = "Time left = " + str(time_now)
+      draw_text(img, 20, 50, time_str, WHITE)
+      '''
 
       # get bounding box confidence score and draw it at the
       # left-bottom (x1, y2) corner of the bounding box (offset by 30 pixels)
@@ -186,5 +207,9 @@ class Node(AbstractNode):
 
          wave_str = f"#waves = {self.num_waves}"
          draw_text(img, 20, 30, wave_str, YELLOW)
+         
+         '''
+         Rep counter would be a modification of the wave code, would need the coordinates to change
+         '''
 
       return {}
