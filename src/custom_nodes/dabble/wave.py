@@ -114,10 +114,8 @@ class Node(AbstractNode):
       # get bounding box confidence score and draw it at the
       # left-bottom (x1, y2) corner of the bounding box (offset by 30 pixels)
       the_bbox = bboxes[0]             # image only has one person
-      #the_bbox = 1
       the_bbox_score = bbox_scores[0]  # only one set of scores
-      #the_bbox_score = 1
-      
+
       x1, y1, x2, y2 = map_bbox_to_image_coords(the_bbox, img_size)
       score_str = f"BBox {the_bbox_score:0.2f}"
       cv2.putText(
