@@ -4,6 +4,7 @@ Node template for creating custom nodes.
 
 from typing import Any, Dict
 import cv2
+import math
 from peekingduck.pipeline.nodes.abstract_node import AbstractNode
 
 # GLOBAL CONSTANTS
@@ -31,14 +32,52 @@ KP_LEFT_ELBOW = 7
 KP_RIGHT_ELBOW = 8
 KP_LEFT_WRIST = 9
 KP_RIGHT_WRIST = 10
+KP_LEFT_HIP = 11
+KP_RIGHT_HIP = 12
+KP_LEFT_KNEE = 13
+KP_RIGHT_KNEE = 14
+KP_LEFT_ANKLE = 15
+KP_RIGHT_ANKLE = 16
+
 DEBUG_CONSOLE_DISPLAY_PARAMETERS = [
-   ["LS: ", 0.03], ["RS: ", 0.08], ["LE: ", 0.13], ["RE: ", 0.18], ["LW: ", 0.23], ["RW: ", 0.28]
+   ["LS: ", 0.03], ["RS: ", 0.08], ["LE: ", 0.13], ["RE: ", 0.18], ["LW: ", 0.23], ["RW: ", 0.28] , ["LH: ", 0.33], ["RH: ", 0.38], ["LK: ", 0.43], ["RK: ", 0.48], ["LA: ", 0.53], ["RA: ", 0.58]
 ]
 
 # DEBUGGING TOOLS ENABLE/DISABLE
 BODY_COORDINATE = True
 DEBUG_CONSOLE = True
 
+# check spine alignment
+def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
+    if right_shoulder and right_hip and right_knee and right_ankle:
+        angle = get_angle(right_shoulder, right_hip, right_knee)
+        # write to a text file for debugging
+        #with open("angle.txt", "a") as f:
+        #   f.write(str(angle) + "\n")
+        '''
+        if angle < 0:
+           return False
+        angle = get_angle(right_hip, right_knee, right_ankle)
+        if angle < 0:
+           return False
+        angle = get_angle(right_shoulder, right_hip, right_ankle)
+        if angle < 0:
+           return False
+        angle = get_angle(right_shoulder, right_knee, right_ankle)
+        if angle < 0:
+           return False
+        else:
+         return True
+         '''
+   
+         
+   
+
+            
+# get angle between 3 points given x, y coordinates   
+def get_angle(a : tuple, b : tuple, c : tuple):
+    return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
+ 
 def map_keypoint_to_image_coords(keypoint, image_size):
    """Second helper function to convert relative keypoint coordinates to
    absolute image coordinates.
@@ -152,6 +191,12 @@ class Node(AbstractNode):
       right_elbow = None
       left_wrist = None
       right_wrist = None
+      left_hip = None
+      right_hip = None
+      left_knee = None
+      right_knee = None
+      left_ankle = None
+      right_ankle = None
 
       # detecting keypoints on screen
       if len(keypoints) >= 1: ### check if can do == 1
@@ -185,11 +230,30 @@ class Node(AbstractNode):
             elif i == KP_RIGHT_WRIST:
                right_wrist = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
                draw_text(img, right_wrist, threshold_color, img_size, KP_RIGHT_WRIST)
+            elif i == KP_LEFT_HIP:
+               left_hip = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+               #draw_text(img, left_hip, threshold_color, img_size, KP_LEFT_HIP)
+            elif i == KP_RIGHT_HIP:
+               right_hip = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+               #draw_text(img, right_hip, threshold_color, img_size, KP_RIGHT_HIP)
+            elif i == KP_LEFT_KNEE:
+               left_knee = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+               #draw_text(img, left_knee, threshold_color, img_size, KP_LEFT_KNEE)
+            elif i == KP_RIGHT_KNEE:
+               right_knee = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+               #draw_text(img, right_knee, threshold_color, img_size, KP_RIGHT_KNEE)
+            elif i == KP_LEFT_ANKLE:
+               left_ankle = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+               #draw_text(img, left_ankle, threshold_color, img_size, KP_LEFT_ANKLE)
+            elif i == KP_RIGHT_ANKLE:
+               right_ankle = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+               #draw_text(img, right_ankle, threshold_color, img_size, KP_RIGHT_ANKLE)
 
+      # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
+      if right_shoulder and right_hip and right_knee and right_ankle:
+         proper_spine = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle)
       return {}
-
-
-
+         
       # result = do_something(inputs["in1"], inputs["in2"])
       # outputs = {"out1": result}
       # return outputs
