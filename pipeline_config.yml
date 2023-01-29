@@ -1,6 +1,6 @@
 nodes:
 - input.visual:
-    source: 0
+    source: "edly_vid.mp4"
 - model.yolo
 - model.posenet
 # - dabble.fps
