@@ -10,7 +10,7 @@ import time
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 
-# GLOBAL CONSTANTS
+# GLOBAL VARIABLES
 # font
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -42,15 +42,22 @@ KP_RIGHT_KNEE = 14
 KP_LEFT_ANKLE = 15
 KP_RIGHT_ANKLE = 16
 
-DEBUG_CONSOLE_DISPLAY_PARAMETERS = [
-    ["LS: ", 0.03], ["RS: ", 0.08], ["LE: ", 0.13], ["RE: ", 0.18], ["LW: ", 0.23], ["RW: ", 0.28], [
-        "LH: ", 0.33], ["RH: ", 0.38], ["LK: ", 0.43], ["RK: ", 0.48], ["LA: ", 0.53], ["RA: ", 0.58]
-]
+# TIMER VARIABLES
+TIMER = True
+TIMER_HAS_STARTED = True
+TIMER_HAS_ENDED = False
+
+# PUSHUP FORM VARIABLESS
+COUNTER = True
+COUNT = 0
 
 # DEBUGGING TOOLS ENABLE/DISABLE
 BODY_COORDINATE = True
 DEBUG_CONSOLE = True
-TIMER = True
+DEBUG_CONSOLE_DISPLAY_PARAMETERS = [
+    ["LS: ", 0.03], ["RS: ", 0.08], ["LE: ", 0.13], ["RE: ", 0.18], ["LW: ", 0.23], ["RW: ", 0.28], [
+        "LH: ", 0.33], ["RH: ", 0.38], ["LK: ", 0.43], ["RK: ", 0.48], ["LA: ", 0.53], ["RA: ", 0.58]
+]
 
 # check spine alignment
 
@@ -115,7 +122,7 @@ def map_keypoint_to_image_coords(keypoint, image_size):
     return int(x), int(y)
 
 
-def draw_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
+def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
     """Helper function to call opencv's drawing function,
     to improve code readability in node's run() method.
     """
@@ -128,7 +135,7 @@ def draw_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: in
             img=img,
             text=x_y_str,
             org=(x, y),
-            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontFace=FONT,
             fontScale=0.4,
             color=color_code,
             thickness=2,
@@ -143,14 +150,14 @@ def draw_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: in
             text=DEBUG_CONSOLE_DISPLAY_PARAMETERS[lookup][0] + x_y_str,
             org=(map_keypoint_to_image_coords(
                 (0.81, DEBUG_CONSOLE_DISPLAY_PARAMETERS[lookup][1]), img_size)),
-            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontFace=FONT,
             fontScale=0.4,
             color=color_code,
             thickness=2,
         )
 
 
-def draw_box(img, start_point=(0.8, 0), end_point=(1, 0.6), color=GREY, thickness=-1):
+def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code=GREY, thickness=-1):
     """
     Draw box for metadata
     """
@@ -162,14 +169,45 @@ def draw_box(img, start_point=(0.8, 0), end_point=(1, 0.6), color=GREY, thicknes
         img=img,
         pt1=start_point,
         pt2=end_point,
-        color=color,
+        color=color_code,
         thickness=thickness
     )
 
 
-def draw_counter_box():
+def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
 
-    return None
+    time_left = end_time - current_time
+
+    cv2.rectangle(
+        img=img,
+        pt1=(map_keypoint_to_image_coords((0, 0), img_size)),
+        pt2=(map_keypoint_to_image_coords((0.2, 0.13), img_size)),
+        color=BLACK,
+        thickness=-1
+    )
+
+    cv2.putText(
+        img=img,
+        text="TIMER: " + str(int(time_left)),
+        org=(map_keypoint_to_image_coords((0.01, 0.06), img_size)),
+        fontFace=FONT,
+        fontScale=1,
+        color=WHITE,
+        thickness=2,
+    )
+
+
+def draw_counter_text(img, img_size):
+
+    cv2.putText(
+        img=img,
+        text="COUNT: " + str(COUNT),
+        org=(map_keypoint_to_image_coords((0.01, 0.12), img_size)),
+        fontFace=FONT,
+        fontScale=1,
+        color=WHITE,
+        thickness=2,
+    )
 
 
 class Node(AbstractNode):
@@ -181,7 +219,8 @@ class Node(AbstractNode):
 
     def __init__(self, config: Dict[str, Any] = None, **kwargs: Any) -> None:
         super().__init__(config, node_path=__name__, **kwargs)
-        self.time_left = 60
+        self.start_time = time.time()
+        self.end_time = time.time() + 60
         self.isLowEnough = False
         self.pushupCount = 0
         self.sta = StandardScaler()  # for scaling values
@@ -231,7 +270,11 @@ class Node(AbstractNode):
             the_keypoint_scores = keypoint_scores[0]
 
             if DEBUG_CONSOLE:
-                draw_box(img)
+                draw_debug_console(img)
+            if TIMER and TIMER_HAS_STARTED:
+                draw_timer_box(img, time.time(), self.end_time, img_size)
+            if COUNTER:
+                draw_counter_text(img, img_size)
 
             for i, keypoints in enumerate(the_keypoints):
                 keypoint_score = the_keypoint_scores[i]
@@ -244,63 +287,63 @@ class Node(AbstractNode):
                 if i == KP_LEFT_SHOULDER:
                     left_shoulder = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, left_shoulder, threshold_color,
-                              img_size, KP_LEFT_SHOULDER)
+                    draw_debug_text(img, left_shoulder,
+                                    threshold_color, img_size, KP_LEFT_SHOULDER)
                 elif i == KP_RIGHT_SHOULDER:
                     right_shoulder = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, right_shoulder, threshold_color,
-                              img_size, KP_RIGHT_SHOULDER)
+                    draw_debug_text(img, right_shoulder,
+                                    threshold_color, img_size, KP_RIGHT_SHOULDER)
                 elif i == KP_LEFT_ELBOW:
                     left_elbow = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, left_elbow, threshold_color,
-                              img_size, KP_LEFT_ELBOW)
+                    draw_debug_text(img, left_elbow,
+                                    threshold_color, img_size, KP_LEFT_ELBOW)
                 elif i == KP_RIGHT_ELBOW:
                     right_elbow = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, right_elbow, threshold_color,
-                              img_size, KP_RIGHT_ELBOW)
+                    draw_debug_text(img, right_elbow,
+                                    threshold_color, img_size, KP_RIGHT_ELBOW)
                 elif i == KP_LEFT_WRIST:
                     left_wrist = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, left_wrist, threshold_color,
-                              img_size, KP_LEFT_WRIST)
+                    draw_debug_text(img, left_wrist,
+                                    threshold_color, img_size, KP_LEFT_WRIST)
                 elif i == KP_RIGHT_WRIST:
                     right_wrist = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, right_wrist, threshold_color,
-                              img_size, KP_RIGHT_WRIST)
+                    draw_debug_text(img, right_wrist,
+                                    threshold_color, img_size, KP_RIGHT_WRIST)
                 elif i == KP_LEFT_HIP:
                     left_hip = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, left_hip, threshold_color,
-                              img_size, KP_LEFT_HIP)
+                    draw_debug_text(
+                        img, left_hip, threshold_color, img_size, KP_LEFT_HIP)
                 elif i == KP_RIGHT_HIP:
                     right_hip = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, right_hip, threshold_color,
-                              img_size, KP_RIGHT_HIP)
+                    draw_debug_text(
+                        img, right_hip, threshold_color, img_size, KP_RIGHT_HIP)
                 elif i == KP_LEFT_KNEE:
                     left_knee = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, left_knee, threshold_color,
-                              img_size, KP_LEFT_KNEE)
+                    draw_debug_text(
+                        img, left_knee, threshold_color, img_size, KP_LEFT_KNEE)
                 elif i == KP_RIGHT_KNEE:
                     right_knee = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, right_knee, threshold_color,
-                              img_size, KP_RIGHT_KNEE)
+                    draw_debug_text(img, right_knee,
+                                    threshold_color, img_size, KP_RIGHT_KNEE)
                 elif i == KP_LEFT_ANKLE:
                     left_ankle = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, left_ankle, threshold_color,
-                              img_size, KP_LEFT_ANKLE)
+                    draw_debug_text(img, left_ankle,
+                                    threshold_color, img_size, KP_LEFT_ANKLE)
                 elif i == KP_RIGHT_ANKLE:
                     right_ankle = (map_keypoint_to_image_coords(
                         keypoints.tolist(), img_size))
-                    draw_text(img, right_ankle, threshold_color,
-                              img_size, KP_RIGHT_ANKLE)
+                    draw_debug_text(img, right_ankle,
+                                    threshold_color, img_size, KP_RIGHT_ANKLE)
 
         # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
             # if right_shoulder and right_hip and right_knee and right_ankle:

@@ -55,11 +55,9 @@ class Node(AbstractNode):
         """
         img = inputs["img"]
 
-        # self.time_left = 60
         while self.time_left > 0:
-            mins, secs = divmod(self.time_left, 60)
-            time.sleep(1)
-            self.time_left -= 1 
+            seconds = time.time()
+            self.time_left = 60 - seconds
         
         time_str = f"Time left = {self.time_left}"
         draw_text(img, 20, 50, time_str, WHITE)
