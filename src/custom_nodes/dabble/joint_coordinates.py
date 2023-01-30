@@ -43,7 +43,7 @@ KP_LEFT_ANKLE = 15
 KP_RIGHT_ANKLE = 16
 
 # TIMER VARIABLES
-TIMER = True
+TIMER = False
 TIMER_HAS_STARTED = True
 TIMER_HAS_ENDED = False
 
@@ -357,8 +357,12 @@ class Node(AbstractNode):
 
             if self.isLowEnough == True and wsd >= 240:
                 self.isLowEnough = False
-                self.pushupCount += 1
-                print(self.pushupCount)
+                COUNT += 1
+                if COUNT == 1:
+                    self.start_time = time.time()
+                    self.end_time = self.start_time + 60
+                    TIMER = True
+                    TIMER_HAS_STARTED = True
 
         return {}
 
