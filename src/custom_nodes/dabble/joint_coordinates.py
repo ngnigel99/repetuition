@@ -6,6 +6,8 @@ from typing import Any, Dict
 import cv2
 import math
 from peekingduck.pipeline.nodes.abstract_node import AbstractNode
+from sklearn.preprocessing import StandardScaler
+import numpy as np
 
 # GLOBAL CONSTANTS
 ## font
@@ -47,33 +49,8 @@ DEBUG_CONSOLE_DISPLAY_PARAMETERS = [
 BODY_COORDINATE = True
 DEBUG_CONSOLE = True
 
-# check spine alignment
-def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
-    if right_shoulder and right_hip and right_knee and right_ankle:
-        angle = get_angle(right_shoulder, right_hip, right_knee)
-        # write to a text file for debugging
-        #with open("angle.txt", "a") as f:
-        #   f.write(str(angle) + "\n")
-        '''
-        if angle < 0:
-           return False
-        angle = get_angle(right_hip, right_knee, right_ankle)
-        if angle < 0:
-           return False
-        angle = get_angle(right_shoulder, right_hip, right_ankle)
-        if angle < 0:
-           return False
-        angle = get_angle(right_shoulder, right_knee, right_ankle)
-        if angle < 0:
-           return False
-        else:
-         return True
-         '''
-   
          
-   
 
-            
 # get angle between 3 points given x, y coordinates   
 def get_angle(a : tuple, b : tuple, c : tuple):
     return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
@@ -149,6 +126,37 @@ def draw_box(img, start_point=(0.8,0), end_point=(1,0.3), color=GREY, thickness=
       thickness=thickness
    )
 
+# Given a text file, fit and return a scaler
+def get_scaler(file_name):
+    with open(file_name) as f:
+        data = f.readlines()
+        data = [float(x.strip()) for x in data]
+        data = np.array(data).reshape(-1, 1)
+        sta = StandardScaler()
+        data = sta.fit_transform(data)
+        return sta
+
+def find_distance(a, b):
+   distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
+   #print out on a text file called distance.txt
+   with open("distance.txt", "a") as f:
+      f.write(str(distance) + "\n")
+   return distance
+
+# check spine alignment
+def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, scaler):
+   if right_shoulder and right_hip and right_knee and right_ankle:
+      angle = get_angle(right_knee, right_hip, right_shoulder)
+      angle = np.array(angle).reshape(-1, 1)
+         
+      # use scaler to transform data
+      angle = scaler.transform(angle)
+      if angle > 1.5 or angle < -1.5:
+         return True #ignore noise
+      if angle > 1.19 or angle < - 1.19:
+         return False
+      return True
+
 class Node(AbstractNode):
    """This is a template class of how to write a node for PeekingDuck.
 
@@ -160,9 +168,10 @@ class Node(AbstractNode):
       super().__init__(config, node_path=__name__, **kwargs)
 
       # initialize/load any configs and models here
+      self.scaler = get_scaler('proper_angle.txt')
       # configs can be called by self.<config_name> e.g. self.filepath
       # self.logger.info(f"model loaded with configs: config")
-
+   
    def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
       """This node does ___.
 
@@ -251,7 +260,8 @@ class Node(AbstractNode):
 
       # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
       if right_shoulder and right_hip and right_knee and right_ankle:
-         proper_spine = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle)
+         spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, self.scaler)  
+
       return {}
          
       # result = do_something(inputs["in1"], inputs["in2"])
