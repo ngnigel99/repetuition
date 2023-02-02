@@ -210,6 +210,37 @@ def draw_counter_text(img, img_size):
     )
 
 
+# Given a text file, fit and return a scaler
+def get_scaler(file_name):
+    with open(file_name) as f:
+        data = f.readlines()
+        data = [float(x.strip()) for x in data]
+        data = np.array(data).reshape(-1, 1)
+        sta = StandardScaler()
+        data = sta.fit_transform(data)
+        return sta
+
+def find_distance(a, b):
+   distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
+   #print out on a text file called distance.txt
+   with open("distance.txt", "a") as f:
+      f.write(str(distance) + "\n")
+   return distance
+
+# check spine alignment
+def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, scaler):
+   if right_shoulder and right_hip and right_knee and right_ankle:
+      angle = get_angle(right_knee, right_hip, right_shoulder)
+      angle = np.array(angle).reshape(-1, 1)
+         
+      # use scaler to transform data
+      angle = scaler.transform(angle)
+      if angle > 1.5 or angle < -1.5:
+         return True #ignore noise
+      if angle > 1.19 or angle < - 1.19:
+         return False
+      return True
+
 class Node(AbstractNode):
     """This is a template class of how to write a node for PeekingDuck.
 
@@ -225,6 +256,7 @@ class Node(AbstractNode):
         self.pushupCount = 0
         self.sta = StandardScaler()  # for scaling values
         # initialize/load any configs and models here
+        self.scaler = get_scaler('proper_angle.txt')
         # configs can be called by self.<config_name> e.g. self.filepath
         # self.logger.info(f"model loaded with configs: config")
 
@@ -345,10 +377,8 @@ class Node(AbstractNode):
                     draw_debug_text(img, right_ankle,
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
-        # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
-            # if right_shoulder and right_hip and right_knee and right_ankle:
-            #     proper_spine = check_spine_alignment(
-            #         right_shoulder, right_hip, right_knee, right_ankle)
+            
+            # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
 
             if right_wrist and right_shoulder:
                 wsd = get_distance(right_wrist, right_shoulder)
@@ -364,8 +394,20 @@ class Node(AbstractNode):
                     TIMER = True
                     TIMER_HAS_STARTED = True
 
+            if right_shoulder and right_hip and right_knee and right_ankle:
+               spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, self.scaler) 
+
         return {}
 
         # result = do_something(inputs["in1"], inputs["in2"])
         # outputs = {"out1": result}
         # return outputs
+
+
+
+
+
+
+
+
+ 
