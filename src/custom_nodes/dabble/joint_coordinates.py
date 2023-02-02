@@ -42,18 +42,9 @@ KP_RIGHT_KNEE = 14
 KP_LEFT_ANKLE = 15
 KP_RIGHT_ANKLE = 16
 
-# TIMER VARIABLES
-TIMER = False
-TIMER_HAS_STARTED = True
-TIMER_HAS_ENDED = False
-
-# PUSHUP FORM VARIABLESS
-COUNTER = True
-COUNT = 0
-
 # DEBUGGING TOOLS ENABLE/DISABLE
-BODY_COORDINATE = True
-DEBUG_CONSOLE = True
+BODY_COORDINATE = False
+DEBUG_CONSOLE = False
 DEBUG_CONSOLE_DISPLAY_PARAMETERS = [
     ["LS: ", 0.03], ["RS: ", 0.08], ["LE: ", 0.13], ["RE: ", 0.18], ["LW: ", 0.23], ["RW: ", 0.28], [
         "LH: ", 0.33], ["RH: ", 0.38], ["LK: ", 0.43], ["RK: ", 0.48], ["LA: ", 0.53], ["RA: ", 0.58]
@@ -85,7 +76,6 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
          '''
 
 # get angle between 3 points given x, y coordinates
-
 
 def get_angle(a: tuple, b: tuple, c: tuple):
     return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
@@ -197,11 +187,11 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
     )
 
 
-def draw_counter_text(img, img_size):
+def draw_counter_text(img, img_size, count: int):
 
     cv2.putText(
         img=img,
-        text="COUNT: " + str(COUNT),
+        text="COUNT: " + str(count),
         org=(map_keypoint_to_image_coords((0.01, 0.12), img_size)),
         fontFace=FONT,
         fontScale=1,
@@ -245,20 +235,31 @@ class Node(AbstractNode):
     """This is a template class of how to write a node for PeekingDuck.
 
     Args:
-       config (:obj:`Dict[str, Any]` | :obj:`None`): Node configuration.
+        config (:obj:`Dict[str, Any]` | :obj:`None`): Node configuration.
     """
 
     def __init__(self, config: Dict[str, Any] = None, **kwargs: Any) -> None:
         super().__init__(config, node_path=__name__, **kwargs)
-        self.start_time = time.time()
-        self.end_time = time.time() + 60
-        self.isLowEnough = False
-        self.pushupCount = 0
-        self.sta = StandardScaler()  # for scaling values
+        
         # initialize/load any configs and models here
-        self.scaler = get_scaler('proper_angle.txt')
         # configs can be called by self.<config_name> e.g. self.filepath
         # self.logger.info(f"model loaded with configs: config")
+        
+        # time
+        self.start_time = 0
+        self.end_time = 0
+        self.timer = True
+        self.timer_has_started = False
+        self.timer_has_ended = False
+
+        # pushup attributes
+        self.isLowEnough = False
+        self.pushupCount = 0
+        self.counterGUI = False
+
+        # pushup scaling
+        self.sta = StandardScaler()  # for scaling values
+        # self.scaler = get_scaler('proper_angle.txt') @Nigel
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         """This node does ___.
@@ -303,10 +304,10 @@ class Node(AbstractNode):
 
             if DEBUG_CONSOLE:
                 draw_debug_console(img)
-            if TIMER and TIMER_HAS_STARTED:
+            if self.timer and self.timer_has_started:
                 draw_timer_box(img, time.time(), self.end_time, img_size)
-            if COUNTER:
-                draw_counter_text(img, img_size)
+            if self.counterGUI:
+                draw_counter_text(img, img_size, self.pushupCount)
 
             for i, keypoints in enumerate(the_keypoints):
                 keypoint_score = the_keypoint_scores[i]
@@ -377,7 +378,6 @@ class Node(AbstractNode):
                     draw_debug_text(img, right_ankle,
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
-            
             # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
 
             if right_wrist and right_shoulder:
@@ -387,27 +387,19 @@ class Node(AbstractNode):
 
             if self.isLowEnough == True and wsd >= 240:
                 self.isLowEnough = False
-                COUNT += 1
-                if COUNT == 1:
+                self.pushupCount += 1
+                if self.pushupCount == 1:
                     self.start_time = time.time()
                     self.end_time = self.start_time + 60
-                    TIMER = True
-                    TIMER_HAS_STARTED = True
+                    self.timer = True
+                    self.timer_has_started = True
+                    self.counterGUI = True
 
-            if right_shoulder and right_hip and right_knee and right_ankle:
-               spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, self.scaler) 
+            # if right_shoulder and right_hip and right_knee and right_ankle: @Nigel
+            #     spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, self.scaler) @Nigel
 
         return {}
 
         # result = do_something(inputs["in1"], inputs["in2"])
         # outputs = {"out1": result}
         # return outputs
-
-
-
-
-
-
-
-
- 
