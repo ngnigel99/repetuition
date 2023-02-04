@@ -253,6 +253,29 @@ def draw_counter_text(img, img_size, count: int):
             thickness=2,
         )
 
+def draw_calibrate_box(img, img_size):
+    '''
+    Draw the black box & text for calibration phase
+    '''
+
+    cv2.rectangle(
+        img=img,
+        pt1=(map_keypoint_to_image_coords((0.62, 0.92), img_size)),
+        pt2=(map_keypoint_to_image_coords((1.0, 1.0), img_size)),
+        color=BLACK,
+        thickness=-1
+    )
+
+    cv2.putText(
+        img=img,
+        text="CALIBRATION PHASE",
+        org=(map_keypoint_to_image_coords((0.65, 0.98), img_size)),
+        fontFace=FONT,
+        fontScale=0.9,
+        color=WHITE,
+        thickness=2,
+    )
+
 # Given a text file, fit and return a scaler
 def get_scaler(file_name):
     with open(file_name) as f:
@@ -426,6 +449,9 @@ class Node(AbstractNode):
                     img, time.time(), self.end_time, img_size)
             if self.counterGUI:
                 draw_counter_text(img, img_size, self.pushupCount)
+            if self.isCalibrated == True:
+                draw_calibrate_box(img, img_size)
+
 
             for i, keypoints in enumerate(the_keypoints):
                 keypoint_score = the_keypoint_scores[i]
@@ -542,6 +568,12 @@ class Node(AbstractNode):
                         print("Spine not aligned")  # debug
                         self.spineAligned = False
 
+                if self.pushupCount == 1:
+                    self.start_time = time.time()
+                    self.end_time = self.start_time + 10
+                    self.timer = True
+                    self.timer_has_started = True
+                    self.counterGUI = True
             else:
                 if right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                     self.orientationisright = check_orientation(img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
