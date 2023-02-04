@@ -30,6 +30,9 @@ GREY = (178, 178, 178)
 # threshold
 THRESHOLD = 0.6
 
+# test time given
+TEST_TIME = 60
+
 # KEYPOINT AND RESPECTIVE IDs
 # https://peekingduck.readthedocs.io/en/stable/resources/01b_pose_estimation.html
 KP_LEFT_SHOULDER = 5
@@ -105,10 +108,15 @@ def getAngleRange(inputFilePath):
         print(min_point, max_point)
         return min_point, max_point
 
-def writeAngleCal(outputFilePath, knee, hip, shoulder):
+def writeAngle(outputFilePath, knee, hip, shoulder):
     with open(outputFilePath, "a") as f:
         angle = get_angle(knee, hip, shoulder)
         f.write(str(angle) + "\n")
+
+def writeDistance(outputFilePath, distance):
+    with open(outputFilePath, "a") as f:
+        if distance > 0:
+            f.write(str(distance) + "\n")
 
 # given an input calibration file, return a tuple of min, max points with scaling
 def map_keypoint_to_image_coords(keypoint, image_size):
@@ -432,7 +440,7 @@ class Node(AbstractNode):
             self.minRange, self.maxRange = getAngleRange("angle.txt")
         else:
             print("Calibrating angle now...")
-            self.defaultAngleScaler = get_scaler("defaultAngle.txt")
+
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         """This node does ___.
@@ -557,71 +565,61 @@ class Node(AbstractNode):
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
             if right_wrist and right_shoulder:
-                wrist_to_shoulder_distance = get_distance(right_wrist, right_shoulder)
+                    wrist_to_shoulder_distance = get_distance(right_wrist, right_shoulder)
 
-            if self.orientationisright:
+            if self.orientationisright and self.isCalibrated:
+                # start timer on first pushup
+                if self.pushupCount == 1:
+                    self.start_time = time.time()
+                    self.end_time = self.start_time + TEST_TIME 
+                    self.timer = True
+                    self.timer_has_started = True
+                    self.counterGUI = True
 
-                if self.isCalibrated == True:
-                    # Run actual test
-                    # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
-                    if wrist_to_shoulder_distance <= self.pushupBottomHeight:
-                        self.isLowEnough = True
-                        print('Low enough')
+                if right_shoulder and right_hip and right_knee:
+                    spine_aligned = check_spine_alignment(
+                            right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
 
-                    if self.isLowEnough and wrist_to_shoulder_distance >= self.pushupTopHeight:
+                # Run actual test
+                # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
+                if wrist_to_shoulder_distance <= self.pushupBottomHeight: 
+                    self.isLowEnough = True
+                    print('Low enough')
+
+                if self.isLowEnough and wrist_to_shoulder_distance >= self.pushupTopHeight:
+                    self.isHighEnough = True
+                    print('High enough')
+
+                    if wrist_to_shoulder_distance >= self.pushupTopHeight:
                         self.isHighEnough = True
-                        print('High enough')
 
-                        if wrist_to_shoulder_distance >= self.pushupTopHeight:
-                            self.isHighEnough = True
-
-                        if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
-                            self.isHighEnough = False
-                            self.isLowEnough = False
-                            self.pushupCount += 1
-                            print(self.pushupCount)
-
-                        if self.pushupCount == 1:
-                            self.start_time = time.time()
-                            self.end_time = self.start_time + 30
-                            self.timer = True
-                            self.timer_has_started = True
-                            self.counterGUI = True
-                    else:
-                        # Run calibration
-                        # print out on a text file called distance.txt
-                        with open("distance.txt", "a") as f:
-                            f.write(str(wrist_to_shoulder_distance) + "\n")
-
-                    if right_shoulder and right_hip and right_knee:
-                        if self.angleCalibrated:
-                            spine_aligned = check_spine_alignment(
-                                right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
-                        else:   # default values w/o user calibration
-                            writeAngleCal("angle.txt", right_knee,
-                                        right_hip, right_shoulder)
-                            spine_aligned = check_spine_alignment(
-                                right_shoulder, right_hip, right_knee, -1.5, 1.5, -1.19, 1.19, self.defaultAngleScaler)
-                        if spine_aligned == False:
-                            print("Spine not aligned")  # debug
-                            self.spineAligned = False
+                    if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
+                        self.isHighEnough = False
+                        self.isLowEnough = False
+                        self.spineAligned = True    # add additional check for spine not aligned
+                        self.pushupCount += 1
+                        print(self.pushupCount)
 
                     if self.pushupCount == 1:
                         self.start_time = time.time()
-                        self.end_time = self.start_time + 40
+                        self.end_time = self.start_time + 30
                         self.timer = True
                         self.timer_has_started = True
                         self.counterGUI = True
-                else:
-                    # Run distance calibration
-                    # print out on a text file called distance.txt
-                    with open("distance.txt", "a") as f:
-                        f.write(str(wrist_to_shoulder_distance) + "\n")
+
+                    if spine_aligned == False:
+                        print("Spine not aligned")  # debug
+                        self.spineAligned = False
+
+            elif self.isCalibrated == False:
+                # Run distance calibration
+                # print out on a text file called distance.txt
+                writeDistance("distance.txt", wrist_to_shoulder_distance)
+                writeAngle("angle.txt", right_knee, right_hip, right_shoulder)
 
             elif right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                 self.orientationisright = check_orientation(img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
                     
-            
             print(self.orientationisright)
 
         return {}
