@@ -309,7 +309,7 @@ def depth_file_denoizer(coordinates_txt_file: str):
     denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
 
     with open(coordinates_txt_file, 'w') as file:
-        file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)))
+        file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
 
 class Node(AbstractNode):
@@ -337,6 +337,9 @@ class Node(AbstractNode):
         self.timer_has_ended = False
 
         # pushup attributes
+        self.pushupTopHeight = 0
+        self.pushupBottomHeight = 0
+        self.isHighEnough = False
         self.isLowEnough = False
         self.pushupCount = 0
         self.counterGUI = False
@@ -349,6 +352,14 @@ class Node(AbstractNode):
         if os.path.isfile('distance.txt'):
             self.isCalibrated = True
             # Get calibrated max min values
+            depth_file_denoizer('distance.txt')
+            distanceFile = open('distance.txt', 'r')
+            Lines = [float(line) for line in distanceFile]
+            Lines = Lines[0:]
+            self.pushupTopHeight = Lines[0] - 50
+            self.pushupBottomHeight = Lines[1] + 50
+            print(self.pushupTopHeight)
+            print(self.pushupBottomHeight)
         else:
             self.isCalibrated = False
 
@@ -489,12 +500,17 @@ class Node(AbstractNode):
             if self.isCalibrated == True:
                 # Run actual test
                 # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
-                if wrist_to_shoulder_distance <= 150:
+                if wrist_to_shoulder_distance <= self.pushupBottomHeight:
                     self.isLowEnough = True
 
-                if self.isLowEnough == True and wsd >= 240 and self.timer_has_ended == False:
+                if wrist_to_shoulder_distance >= self.pushupTopHeight:
+                    self.isHighEnough = True
+
+                if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
+                    self.isHighEnough = False
                     self.isLowEnough = False
                     self.pushupCount += 1
+                    print(self.pushupCount)
 
                 if self.pushupCount == 1:
                     self.start_time = time.time()
