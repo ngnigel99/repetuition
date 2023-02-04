@@ -78,11 +78,8 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
          '''
 
 # get angle between 3 points given x, y coordinates
-
-
 def get_angle(a: tuple, b: tuple, c: tuple):
     return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
-
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
@@ -90,14 +87,11 @@ def get_distance(a: tuple, b: tuple):
         f.write(str(distance) + "\n")
     return distance
 
-
-"""
-given a text file containing angles, return range of acceptable points.
-    this removes outliers, and also demarcates the range of acceptable reps.
-"""
-
-
 def getAngleRange(inputFilePath):
+    """
+    given a text file containing angles, return range of acceptable points.
+    this removes outliers, and also demarcates the range of acceptable reps.
+    """
     with open(inputFilePath) as f:
         data = f.readlines()
         data = [float(x.strip()) for x in data]
@@ -111,15 +105,12 @@ def getAngleRange(inputFilePath):
         print(min_point, max_point)
         return min_point, max_point
 
-
 def writeAngleCal(outputFilePath, knee, hip, shoulder):
     with open(outputFilePath, "a") as f:
         angle = get_angle(knee, hip, shoulder)
         f.write(str(angle) + "\n")
 
 # given an input calibration file, return a tuple of min, max points with scaling
-
-
 def map_keypoint_to_image_coords(keypoint, image_size):
     """Second helper function to convert relative keypoint coordinates to
     absolute image coordinates.
@@ -142,7 +133,6 @@ def map_keypoint_to_image_coords(keypoint, image_size):
     y *= height
     # because coordinates need to be type:int for cv2 object
     return int(x), int(y)
-
 
 def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
     """
@@ -184,7 +174,6 @@ def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoi
             thickness=2,
         )
 
-
 def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code=GREY, thickness=-1):
     """
     Draw box for metadata
@@ -200,7 +189,6 @@ def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code
         color=color_code,
         thickness=thickness
     )
-
 
 def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
     '''
@@ -242,7 +230,6 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
 
     return end_timer
 
-
 def draw_counter_text(img, img_size, count: int):
 
     cv2.putText(
@@ -266,10 +253,7 @@ def draw_counter_text(img, img_size, count: int):
             thickness=2,
         )
 
-
 # Given a text file, fit and return a scaler
-
-
 def get_scaler(file_name):
     with open(file_name) as f:
         data = f.readlines()
@@ -278,7 +262,6 @@ def get_scaler(file_name):
         sta = StandardScaler()
         data = sta.fit_transform(data)
         return sta
-
 
 def check_spine_alignment(right_shoulder, right_hip, right_knee, minNoise, maxNoise, minRange, maxRange, scaler):
     if right_shoulder and right_hip and right_knee:
@@ -291,7 +274,6 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, minNoise, maxNo
         if angle > maxRange or angle < minRange:
             return False
         return True
-
 
 def depth_file_denoizer(coordinates_txt_file: str):
     '''
