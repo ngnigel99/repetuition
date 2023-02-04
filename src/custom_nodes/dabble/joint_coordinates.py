@@ -175,17 +175,29 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
         color=BLACK,
         thickness=-1
     )
-
-    cv2.putText(
-        img=img,
-        text="TIMER: " + str(int(time_left)),
-        org=(map_keypoint_to_image_coords((0.01, 0.06), img_size)),
-        fontFace=FONT,
-        fontScale=1,
-        color=WHITE,
-        thickness=2,
-    )
-
+    
+    if time_left > 0:
+        cv2.putText(
+            img=img,
+            text="TIMER: " + str(int(time_left)),
+            org=(map_keypoint_to_image_coords((0.01, 0.06), img_size)),
+            fontFace=FONT,
+            fontScale=1,
+            color=WHITE,
+            thickness=2,
+        )
+    
+    if time_left <= 0:
+        cv2.putText(
+            img=img,
+            text="TIMER: Time's up",
+            org=(map_keypoint_to_image_coords((0.01, 0.06), img_size)),
+            fontFace=FONT,
+            fontScale=1,
+            color=WHITE,
+            thickness=2,
+        )
+    
 
 def draw_counter_text(img, img_size, count: int):
 
