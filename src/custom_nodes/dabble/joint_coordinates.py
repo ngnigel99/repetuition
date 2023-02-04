@@ -211,7 +211,7 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
     cv2.rectangle(
         img=img,
         pt1=(map_keypoint_to_image_coords((0, 0), img_size)),
-        pt2=(map_keypoint_to_image_coords((0.2, 0.13), img_size)),
+        pt2=(map_keypoint_to_image_coords((0.33, 0.13), img_size)),
         color=BLACK,
         thickness=-1
     )
@@ -226,8 +226,9 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
             color=WHITE,
             thickness=2,
         )
+        end_timer = False
 
-    if time_left <= 0:
+    else:
         cv2.putText(
             img=img,
             text="TIMER: Time's up",
@@ -237,6 +238,9 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
             color=WHITE,
             thickness=2,
         )
+        end_timer = True
+
+    return end_timer
 
 
 def draw_counter_text(img, img_size, count: int):
@@ -250,6 +254,18 @@ def draw_counter_text(img, img_size, count: int):
         color=WHITE,
         thickness=2,
     )
+
+    if count == 60:
+        cv2.putText(
+            img=img,
+            text="COUNT: 60 - Max",
+            org=(map_keypoint_to_image_coords((0.01, 0.12), img_size)),
+            fontFace=FONT,
+            fontScale=1,
+            color=WHITE,
+            thickness=2,
+        )
+
 
 # Given a text file, fit and return a scaler
 
@@ -392,7 +408,8 @@ class Node(AbstractNode):
             if DEBUG_CONSOLE:
                 draw_debug_console(img)
             if self.timer and self.timer_has_started:
-                draw_timer_box(img, time.time(), self.end_time, img_size)
+                self.timer_has_ended = draw_timer_box(
+                    img, time.time(), self.end_time, img_size)
             if self.counterGUI:
                 draw_counter_text(img, img_size, self.pushupCount)
 
@@ -475,16 +492,13 @@ class Node(AbstractNode):
                 if wrist_to_shoulder_distance <= 150:
                     self.isLowEnough = True
 
-                if self.isLowEnough == True and wrist_to_shoulder_distance >= 240:
+                if self.isLowEnough == True and wsd >= 240 and self.timer_has_ended == False:
                     self.isLowEnough = False
                     self.pushupCount += 1
 
-                # check spine alignment
-                # if right_shoulder and right_hip and right_knee and right_ankle: @Nigel
-                #     spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, self.scaler) @Nigel
                 if self.pushupCount == 1:
                     self.start_time = time.time()
-                    self.end_time = self.start_time + 60
+                    self.end_time = self.start_time + 5
                     self.timer = True
                     self.timer_has_started = True
                     self.counterGUI = True
