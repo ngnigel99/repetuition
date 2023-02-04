@@ -9,6 +9,7 @@ from peekingduck.pipeline.nodes.abstract_node import AbstractNode
 import time
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import os.path
 
 # GLOBAL VARIABLES
 # font
@@ -76,6 +77,7 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
          '''
 
 # get angle between 3 points given x, y coordinates
+
 
 def get_angle(a: tuple, b: tuple, c: tuple):
     return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
@@ -175,7 +177,7 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
         color=BLACK,
         thickness=-1
     )
-    
+
     if time_left > 0:
         cv2.putText(
             img=img,
@@ -186,7 +188,7 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
             color=WHITE,
             thickness=2,
         )
-    
+
     if time_left <= 0:
         cv2.putText(
             img=img,
@@ -197,7 +199,7 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
             color=WHITE,
             thickness=2,
         )
-    
+
 
 def draw_counter_text(img, img_size, count: int):
 
@@ -222,26 +224,20 @@ def get_scaler(file_name):
         data = sta.fit_transform(data)
         return sta
 
-def find_distance(a, b):
-   distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-   #print out on a text file called distance.txt
-   with open("distance.txt", "a") as f:
-      f.write(str(distance) + "\n")
-   return distance
 
-# check spine alignment
 def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, scaler):
-   if right_shoulder and right_hip and right_knee and right_ankle:
-      angle = get_angle(right_knee, right_hip, right_shoulder)
-      angle = np.array(angle).reshape(-1, 1)
-         
-      # use scaler to transform data
-      angle = scaler.transform(angle)
-      if angle > 1.5 or angle < -1.5:
-         return True #ignore noise
-      if angle > 1.19 or angle < - 1.19:
-         return False
-      return True
+    if right_shoulder and right_hip and right_knee and right_ankle:
+        angle = get_angle(right_knee, right_hip, right_shoulder)
+        angle = np.array(angle).reshape(-1, 1)
+
+        # use scaler to transform data
+        angle = scaler.transform(angle)
+        if angle > 1.5 or angle < -1.5:
+            return True  # ignore noise
+        if angle > 1.19 or angle < - 1.19:
+            return False
+        return True
+
 
 class Node(AbstractNode):
     """This is a template class of how to write a node for PeekingDuck.
@@ -252,11 +248,14 @@ class Node(AbstractNode):
 
     def __init__(self, config: Dict[str, Any] = None, **kwargs: Any) -> None:
         super().__init__(config, node_path=__name__, **kwargs)
-        
+
         # initialize/load any configs and models here
         # configs can be called by self.<config_name> e.g. self.filepath
         # self.logger.info(f"model loaded with configs: config")
-        
+
+        # system attributes
+        self.isCalibrated = True
+
         # time
         self.start_time = 0
         self.end_time = 0
@@ -272,6 +271,13 @@ class Node(AbstractNode):
         # pushup scaling
         self.sta = StandardScaler()  # for scaling values
         # self.scaler = get_scaler('proper_angle.txt') @Nigel
+
+        # Check if the system has been calibrated to start testing, else calibrate first
+        if os.path.isfile('distance.txt'):
+            self.isCalibrated = True
+            # Get calibrated max min values
+        else:
+            self.isCalibrated = False
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         """This node does ___.
@@ -390,25 +396,34 @@ class Node(AbstractNode):
                     draw_debug_text(img, right_ankle,
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
-            # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
-
             if right_wrist and right_shoulder:
-                wsd = get_distance(right_wrist, right_shoulder)
-                if wsd <= 150:
+                wrist_to_shoulder_distance = get_distance(
+                    right_wrist, right_shoulder)
+
+            if self.isCalibrated == True:
+                # Run actual test
+                # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
+                if wrist_to_shoulder_distance <= 150:
                     self.isLowEnough = True
 
-            if self.isLowEnough == True and wsd >= 240:
-                self.isLowEnough = False
-                self.pushupCount += 1
+                if self.isLowEnough == True and wrist_to_shoulder_distance >= 240:
+                    self.isLowEnough = False
+                    self.pushupCount += 1
+
+                # check spine alignment
+                # if right_shoulder and right_hip and right_knee and right_ankle: @Nigel
+                #     spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, self.scaler) @Nigel
                 if self.pushupCount == 1:
                     self.start_time = time.time()
                     self.end_time = self.start_time + 60
                     self.timer = True
                     self.timer_has_started = True
                     self.counterGUI = True
-
-            # if right_shoulder and right_hip and right_knee and right_ankle: @Nigel
-            #     spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, self.scaler) @Nigel
+            else:
+                # Run calibration
+                # print out on a text file called distance.txt
+                with open("distance.txt", "a") as f:
+                    f.write(str(wrist_to_shoulder_distance) + "\n")
 
         return {}
 
