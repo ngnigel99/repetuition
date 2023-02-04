@@ -1,5 +1,6 @@
 nodes:
   - input.visual:
+      #source: "IMG_2997.MOV"
       source: "edly_vid.mp4"
       #source: 0
   - model.yolo
