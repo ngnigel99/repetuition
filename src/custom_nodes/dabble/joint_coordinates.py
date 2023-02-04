@@ -9,7 +9,9 @@ from peekingduck.pipeline.nodes.abstract_node import AbstractNode
 import time
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import os
 import statistics
+
 
 # GLOBAL VARIABLES
 # font
@@ -51,6 +53,7 @@ DEBUG_CONSOLE_DISPLAY_PARAMETERS = [
         "LH: ", 0.33], ["RH: ", 0.38], ["LK: ", 0.43], ["RK: ", 0.48], ["LA: ", 0.53], ["RA: ", 0.58]
 ]
 
+
 # check spine alignment
 def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
     if right_shoulder and right_hip and right_knee and right_ankle:
@@ -84,6 +87,31 @@ def get_distance(a: tuple, b: tuple):
         f.write(str(distance) + "\n")
     return distance
 
+
+"""
+given a text file containing angles, return range of acceptable points.
+    this removes outliers, and also demarcates the range of acceptable reps.
+"""
+def getAngleRange(inputFilePath):
+    with open(inputFilePath) as f:
+        data = f.readlines()
+        data = [float(x.strip()) for x in data]
+        arr = np.array(data).reshape(-1, 1)
+        arr = StandardScaler().fit_transform(arr)
+        arr = arr[arr[:, 0] <= 1.5]
+        arr = arr[arr[:, 0] >= -1.5]
+
+        max_point = np.max(arr)
+        min_point = np.min(arr) 
+        print(min_point, max_point)
+        return min_point, max_point
+
+def writeAngleCal(outputFilePath, knee, hip, shoulder):
+    with open(outputFilePath, "a") as f:
+        angle = get_angle(knee, hip, shoulder)
+        f.write(str(angle) + "\n")
+
+# given an input calibration file, return a tuple of min, max points with scaling
 def map_keypoint_to_image_coords(keypoint, image_size):
     """Second helper function to convert relative keypoint coordinates to
     absolute image coordinates.
@@ -228,17 +256,16 @@ def find_distance(a, b):
       f.write(str(distance) + "\n")
    return distance
 
-# check spine alignment
-def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, scaler):
-   if right_shoulder and right_hip and right_knee and right_ankle:
+
+def check_spine_alignment(right_shoulder, right_hip, right_knee, minNoise, maxNoise, minRange, maxRange, scaler):
+   if right_shoulder and right_hip and right_knee:
       angle = get_angle(right_knee, right_hip, right_shoulder)
       angle = np.array(angle).reshape(-1, 1)
-         
       # use scaler to transform data
       angle = scaler.transform(angle)
-      if angle > 1.5 or angle < -1.5:
+      if angle > maxNoise or angle < minNoise:
          return True #ignore noise
-      if angle > 1.19 or angle < - 1.19:
+      if angle > maxRange or angle < minRange:
          return False
       return True
 
@@ -286,10 +313,18 @@ class Node(AbstractNode):
         self.pushupCount = 0
         self.counterGUI = False
 
-        # pushup scaling
-        self.sta = StandardScaler()  # for scaling values
-        # self.scaler = get_scaler('proper_angle.txt') @Nigel
-
+        
+        # calibration data for angle
+        self.angleCalibrated = False
+        if os.path.exists("angle.txt"):
+            self.angleCalibrated = True
+            self.angleScaler = get_scaler("angle.txt")
+            self.minNoise = -1.5    # scaled so 1.5 s.d.
+            self.maxNoise = 1.5
+            self.minRange, self.maxRange = getAngleRange("angle.txt")
+        else:
+            print("not calibrated!")
+            self.defaultAngleScaler = get_scaler("defaultAngle.txt")
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         """This node does ___.
 
@@ -424,9 +459,15 @@ class Node(AbstractNode):
                     self.timer_has_started = True
                     self.counterGUI = True
 
-            # if right_shoulder and right_hip and right_knee and right_ankle: @Nigel
-            #     spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, self.scaler) @Nigel
-
+            if right_shoulder and right_hip and right_knee:
+                if self.angleCalibrated:
+                    spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee,self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
+                else:   # default values w/o user calibration
+                    writeAngleCal("angle.txt", right_knee, right_hip, right_shoulder)
+                    spine_aligned = check_spine_alignment(right_shoulder, right_hip, right_knee, -1.5, 1.5, -1.19, 1.19, self.defaultAngleScaler)
+                if spine_aligned == False:
+                    print("Spine not aligned")  # debug
+                    self.spineAligned = False
         return {}
 
         # result = do_something(inputs["in1"], inputs["in2"])
