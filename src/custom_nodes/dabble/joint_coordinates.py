@@ -266,6 +266,7 @@ def draw_counter_text(img, img_size, count: int):
             thickness=2,
         )
 
+
 def draw_calibrate_box(img, img_size):
     '''
     Draw the black box & text for calibration phase
@@ -288,9 +289,7 @@ def draw_calibrate_box(img, img_size):
         color=WHITE,
         thickness=2,
     )
-        
 
-    
 
 # Given a text file, fit and return a scaler
 
@@ -375,29 +374,33 @@ class Node(AbstractNode):
 
         # Check if the system has been calibrated to start testing, else calibrate first
         if os.path.isfile('distance.txt'):
+            print('Distance calibrated! IPPT in progress...')
             self.isCalibrated = True
             # Get calibrated max min values
             depth_file_denoizer('distance.txt')
             distanceFile = open('distance.txt', 'r')
             Lines = [float(line) for line in distanceFile]
             Lines = Lines[0:]
-            self.pushupTopHeight = Lines[0] - 50
-            self.pushupBottomHeight = Lines[1] + 50
-            print(self.pushupTopHeight)
-            print(self.pushupBottomHeight)
+            difference = Lines[0] - Lines[1]
+            self.pushupTopHeight = Lines[0] - 0.3*difference
+            self.pushupBottomHeight = Lines[1] + 0.2*difference
+            print('Max = ' + str(self.pushupTopHeight))
+            print('Min = ' + str(self.pushupBottomHeight))
         else:
             self.isCalibrated = False
+            print('Calibrating distance now...')
 
         # calibration data for angle
         self.angleCalibrated = False
         if os.path.exists("angle.txt"):
+            print('Angle calibrated! IPPT in progress...')
             self.angleCalibrated = True
             self.angleScaler = get_scaler("angle.txt")
             self.minNoise = -1.5    # scaled so 1.5 s.d.
             self.maxNoise = 1.5
             self.minRange, self.maxRange = getAngleRange("angle.txt")
         else:
-            print("not calibrated!")
+            print("Calibrating angle now...")
             self.defaultAngleScaler = get_scaler("defaultAngle.txt")
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
@@ -450,7 +453,6 @@ class Node(AbstractNode):
                 draw_counter_text(img, img_size, self.pushupCount)
             if self.isCalibrated == True:
                 draw_calibrate_box(img, img_size)
-
 
             for i, keypoints in enumerate(the_keypoints):
                 keypoint_score = the_keypoint_scores[i]
@@ -530,9 +532,11 @@ class Node(AbstractNode):
                 # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
                 if wrist_to_shoulder_distance <= self.pushupBottomHeight:
                     self.isLowEnough = True
+                    print('Low enough')
 
-                if wrist_to_shoulder_distance >= self.pushupTopHeight:
+                if self.isLowEnough and wrist_to_shoulder_distance >= self.pushupTopHeight:
                     self.isHighEnough = True
+                    print('High enough')
 
                 if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
                     self.isHighEnough = False
@@ -542,12 +546,12 @@ class Node(AbstractNode):
 
                 if self.pushupCount == 1:
                     self.start_time = time.time()
-                    self.end_time = self.start_time + 10
+                    self.end_time = self.start_time + 40
                     self.timer = True
                     self.timer_has_started = True
                     self.counterGUI = True
             else:
-                # Run calibration
+                # Run distance calibration
                 # print out on a text file called distance.txt
                 with open("distance.txt", "a") as f:
                     f.write(str(wrist_to_shoulder_distance) + "\n")
