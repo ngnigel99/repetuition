@@ -330,6 +330,8 @@ def depth_file_denoizer(coordinates_txt_file: str):
     with open(coordinates_txt_file, 'r') as file:
         data = [float(line) for line in file]
         data = data[0:]
+        left_cutoff, right_cutoff = int(len(data) * 0.1), int(len(data) * 0.9)
+        data = data[left_cutoff:right_cutoff]
         mean = sum(data)/len(data)
         stdev = statistics.stdev(data)
         upper_bound = mean + stdev
@@ -337,6 +339,7 @@ def depth_file_denoizer(coordinates_txt_file: str):
 
     denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
 
+    open(coordinates_txt_file, 'w').close()
     with open(coordinates_txt_file, 'w') as file:
         file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
