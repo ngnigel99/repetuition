@@ -1,7 +1,8 @@
 nodes:
   - input.visual:
+      # source: "hemanth_vid.mov"
       source: "edly_vid.mp4"
-      #source: 0
+      # source: 0
   - model.yolo
   # - model.movenet:
   #     model_format: tensorrt

@@ -293,6 +293,24 @@ def depth_file_denoizer(coordinates_txt_file: str):
     with open(coordinates_txt_file, 'w') as file:
         file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
+def check_orientation(img_size:tuple, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle) -> bool:
+    """
+    Check if the user's right side is facing the camera.
+    Shoulders and wrists should be to the right 40% of the img,
+    ankles should be lower than the shoulders and wrist and on the left 40% of img
+    
+    inputs: all respective keypoints
+    """
+
+    left_limit, right_limit = int(0.4 * img_size[0]), int(0.6 * img_size[0])
+
+    if (right_wrist[0] >= right_limit) and (left_wrist[0] >= right_limit) and (right_shoulder[0] >= right_limit) and (left_shoulder[0] >= right_limit):
+        if (right_ankle[0] <= left_limit) and (left_ankle[0] <= left_limit):
+            if (right_ankle[1] > right_shoulder[1]) and (right_ankle[1] > left_shoulder[1]):
+                if (left_ankle[1] > right_shoulder[1]) and (left_ankle[1] > left_shoulder[1]):
+                    return True
+
+    return False
 
 class Node(AbstractNode):
     """This is a template class of how to write a node for PeekingDuck.
@@ -330,6 +348,9 @@ class Node(AbstractNode):
         self.sta = StandardScaler()  # for scaling values
         # self.scaler = get_scaler('proper_angle.txt') @Nigel
 
+        # check if user is facing the right
+        self.orientationisright = False
+
         # Check if the system has been calibrated to start testing, else calibrate first
         if os.path.isfile('distance.txt'):
             self.isCalibrated = True
@@ -361,11 +382,11 @@ class Node(AbstractNode):
         """This node does ___.
 
         Args:
-           inputs (dict): Dictionary with keys
-              "img", "keypoints", "keypoint_scores"
+            inputs (dict): Dictionary with keys
+                "img", "keypoints", "keypoint_scores"
 
         Returns:
-           outputs (dict): Dictionary with keys "__".
+            outputs (dict): Dictionary with keys "__".
         """
 
         # variables
@@ -475,49 +496,58 @@ class Node(AbstractNode):
                     draw_debug_text(img, right_ankle,
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
-            if right_wrist and right_shoulder:
-                wrist_to_shoulder_distance = get_distance(
-                    right_wrist, right_shoulder)
+            if self.orientationisright:
 
-            if self.isCalibrated == True:
-                # Run actual test
-                # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
-                if wrist_to_shoulder_distance <= self.pushupBottomHeight:
-                    self.isLowEnough = True
+                if right_wrist and right_shoulder:
+                    wrist_to_shoulder_distance = get_distance(
+                        right_wrist, right_shoulder)
 
-                if wrist_to_shoulder_distance >= self.pushupTopHeight:
-                    self.isHighEnough = True
+                if self.isCalibrated == True:
+                    # Run actual test
+                    # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
+                    if wrist_to_shoulder_distance <= self.pushupBottomHeight:
+                        self.isLowEnough = True
 
-                if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
-                    self.isHighEnough = False
-                    self.isLowEnough = False
-                    self.pushupCount += 1
-                    print(self.pushupCount)
+                    if wrist_to_shoulder_distance >= self.pushupTopHeight:
+                        self.isHighEnough = True
 
-                if self.pushupCount == 1:
-                    self.start_time = time.time()
-                    self.end_time = self.start_time + 5
-                    self.timer = True
-                    self.timer_has_started = True
-                    self.counterGUI = True
+                    if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
+                        self.isHighEnough = False
+                        self.isLowEnough = False
+                        self.pushupCount += 1
+                        print(self.pushupCount)
+
+                    if self.pushupCount == 1:
+                        self.start_time = time.time()
+                        self.end_time = self.start_time + 30
+                        self.timer = True
+                        self.timer_has_started = True
+                        self.counterGUI = True
+                else:
+                    # Run calibration
+                    # print out on a text file called distance.txt
+                    with open("distance.txt", "a") as f:
+                        f.write(str(wrist_to_shoulder_distance) + "\n")
+
+                if right_shoulder and right_hip and right_knee:
+                    if self.angleCalibrated:
+                        spine_aligned = check_spine_alignment(
+                            right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
+                    else:   # default values w/o user calibration
+                        writeAngleCal("angle.txt", right_knee,
+                                    right_hip, right_shoulder)
+                        spine_aligned = check_spine_alignment(
+                            right_shoulder, right_hip, right_knee, -1.5, 1.5, -1.19, 1.19, self.defaultAngleScaler)
+                    if spine_aligned == False:
+                        print("Spine not aligned")  # debug
+                        self.spineAligned = False
+
             else:
-                # Run calibration
-                # print out on a text file called distance.txt
-                with open("distance.txt", "a") as f:
-                    f.write(str(wrist_to_shoulder_distance) + "\n")
+                if right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
+                    self.orientationisright = check_orientation(img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
+            
+            print(self.orientationisright)
 
-            if right_shoulder and right_hip and right_knee:
-                if self.angleCalibrated:
-                    spine_aligned = check_spine_alignment(
-                        right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
-                else:   # default values w/o user calibration
-                    writeAngleCal("angle.txt", right_knee,
-                                  right_hip, right_shoulder)
-                    spine_aligned = check_spine_alignment(
-                        right_shoulder, right_hip, right_knee, -1.5, 1.5, -1.19, 1.19, self.defaultAngleScaler)
-                if spine_aligned == False:
-                    print("Spine not aligned")  # debug
-                    self.spineAligned = False
         return {}
 
         # result = do_something(inputs["in1"], inputs["in2"])
