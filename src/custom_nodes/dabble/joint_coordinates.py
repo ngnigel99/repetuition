@@ -9,6 +9,7 @@ from peekingduck.pipeline.nodes.abstract_node import AbstractNode
 import time
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import statistics
 
 # GLOBAL VARIABLES
 # font
@@ -79,8 +80,8 @@ def get_angle(a: tuple, b: tuple, c: tuple):
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-   #  with open("distance.txt", "a") as f:
-   #      f.write(str(distance) + "\n")
+    with open("distance.txt", "a") as f:
+        f.write(str(distance) + "\n")
     return distance
 
 def map_keypoint_to_image_coords(keypoint, image_size):
@@ -197,7 +198,6 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
             color=WHITE,
             thickness=2,
         )
-    
 
 def draw_counter_text(img, img_size, count: int):
 
@@ -241,6 +241,24 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle, sc
       if angle > 1.19 or angle < - 1.19:
          return False
       return True
+
+def depth_file_denoizer(coordinates_txt_file : str):
+    '''
+    Parse all the depth values in a txt file and replace them with only the denoised maximum and minimum in the txt file
+    (To be used for depth calibration)
+    '''
+    with open(coordinates_txt_file, 'r') as file:
+        data = [float(line) for line in file]
+        data = data[0:]
+        mean = sum(data)/len(data)
+        stdev = statistics.stdev(data)
+        upper_bound = mean + stdev
+        lower_bound = mean - stdev
+
+    denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
+
+    with open(coordinates_txt_file, 'w') as file:
+        file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)))
 
 class Node(AbstractNode):
     """This is a template class of how to write a node for PeekingDuck.
