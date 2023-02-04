@@ -10,6 +10,8 @@ import time
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import os
+import statistics
+
 
 # GLOBAL VARIABLES
 # font
@@ -51,16 +53,40 @@ DEBUG_CONSOLE_DISPLAY_PARAMETERS = [
         "LH: ", 0.33], ["RH: ", 0.38], ["LK: ", 0.43], ["RK: ", 0.48], ["LA: ", 0.53], ["RA: ", 0.58]
 ]
 
+
+# check spine alignment
+def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
+    if right_shoulder and right_hip and right_knee and right_ankle:
+        angle = get_angle(right_shoulder, right_hip, right_knee)
+        # write to a text file for debugging
+        # with open("angle.txt", "a") as f:
+        #   f.write(str(angle) + "\n")
+        '''
+      if angle < 0:
+         return False
+      angle = get_angle(right_hip, right_knee, right_ankle)
+      if angle < 0:
+         return False
+      angle = get_angle(right_shoulder, right_hip, right_ankle)
+      if angle < 0:
+         return False
+      angle = get_angle(right_shoulder, right_knee, right_ankle)
+      if angle < 0:
+         return False
+      else:
+         return True
+         '''
+
 # get angle between 3 points given x, y coordinates
 def get_angle(a: tuple, b: tuple, c: tuple):
     return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
 
-
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-   #  with open("distance.txt", "a") as f:
-   #      f.write(str(distance) + "\n")
+    with open("distance.txt", "a") as f:
+        f.write(str(distance) + "\n")
     return distance
+
 
 """
 given a text file containing angles, return range of acceptable points.
@@ -109,10 +135,15 @@ def map_keypoint_to_image_coords(keypoint, image_size):
     # because coordinates need to be type:int for cv2 object
     return int(x), int(y)
 
-
 def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
-    """Helper function to call opencv's drawing function,
-    to improve code readability in node's run() method.
+    """
+    Helper function to draw the coordinate texts for joints
+
+    img: image to draw console and coordinates on
+    coordinates: int tuple of joint coordinates
+    color_code: color of preference for text
+    img_size: int tuple image dimensions
+    keypoint: GLOBAL VARIABLE for joint keypoint
     """
 
     x, y = coordinates[0], coordinates[1]
@@ -144,7 +175,6 @@ def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoi
             thickness=2,
         )
 
-
 def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code=GREY, thickness=-1):
     """
     Draw box for metadata
@@ -161,9 +191,10 @@ def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code
         thickness=thickness
     )
 
-
 def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
-
+    '''
+    Draw the black box backgroud for count and timer and, print updated timer values
+    '''
     time_left = end_time - current_time
 
     cv2.rectangle(
@@ -195,7 +226,6 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
             color=WHITE,
             thickness=2,
         )
-    
 
 def draw_counter_text(img, img_size, count: int):
 
@@ -208,7 +238,6 @@ def draw_counter_text(img, img_size, count: int):
         color=WHITE,
         thickness=2,
     )
-
 
 # Given a text file, fit and return a scaler
 def get_scaler(file_name):
@@ -239,6 +268,24 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, minNoise, maxNo
       if angle > maxRange or angle < minRange:
          return False
       return True
+
+def depth_file_denoizer(coordinates_txt_file : str):
+    '''
+    Parse all the depth values in a txt file and replace them with only the denoised maximum and minimum in the txt file
+    (To be used for depth calibration)
+    '''
+    with open(coordinates_txt_file, 'r') as file:
+        data = [float(line) for line in file]
+        data = data[0:]
+        mean = sum(data)/len(data)
+        stdev = statistics.stdev(data)
+        upper_bound = mean + stdev
+        lower_bound = mean - stdev
+
+    denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
+
+    with open(coordinates_txt_file, 'w') as file:
+        file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)))
 
 class Node(AbstractNode):
     """This is a template class of how to write a node for PeekingDuck.
