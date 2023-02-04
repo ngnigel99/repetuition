@@ -113,8 +113,14 @@ def map_keypoint_to_image_coords(keypoint, image_size):
 
 
 def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
-    """Helper function to call opencv's drawing function,
-    to improve code readability in node's run() method.
+    """
+    Helper function to draw the coordinate texts for joints
+
+    img: image to draw console and coordinates on
+    coordinates: int tuple of joint coordinates
+    color_code: color of preference for text
+    img_size: int tuple image dimensions
+    keypoint: GLOBAL VARIABLE for joint keypoint
     """
 
     x, y = coordinates[0], coordinates[1]
@@ -146,7 +152,6 @@ def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoi
             thickness=2,
         )
 
-
 def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code=GREY, thickness=-1):
     """
     Draw box for metadata
@@ -162,7 +167,6 @@ def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code
         color=color_code,
         thickness=thickness
     )
-
 
 def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
 
@@ -210,7 +214,6 @@ def draw_counter_text(img, img_size, count: int):
         color=WHITE,
         thickness=2,
     )
-
 
 # Given a text file, fit and return a scaler
 def get_scaler(file_name):
