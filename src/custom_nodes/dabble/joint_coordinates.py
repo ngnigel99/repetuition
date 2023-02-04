@@ -612,12 +612,6 @@ class Node(AbstractNode):
                 # print out on a text file called distance.txt
                 writeDistance("distance.txt", wrist_to_shoulder_distance)
                 writeAngle("angle.txt", right_knee, right_hip, right_shoulder)
-                else:
-                    # Run distance calibration
-                    # print out on a text file called distance.txt
-                    with open("distance.txt", "a") as f:
-                        if wrist_to_shoulder_distance > 0:
-                            f.write(str(wrist_to_shoulder_distance) + "\n")
 
             elif right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                 self.orientationisright = check_orientation(img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
