@@ -492,7 +492,7 @@ class Node(AbstractNode):
                 if wrist_to_shoulder_distance <= 150:
                     self.isLowEnough = True
 
-                if self.isLowEnough == True and wsd >= 240 and self.timer_has_ended == False:
+                if self.isLowEnough == True and wrist_to_shoulder_distance >= 240 and self.timer_has_ended == False:
                     self.isLowEnough = False
                     self.pushupCount += 1
 
