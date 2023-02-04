@@ -51,8 +51,6 @@ DEBUG_CONSOLE_DISPLAY_PARAMETERS = [
 ]
 
 # check spine alignment
-
-
 def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
     if right_shoulder and right_hip and right_knee and right_ankle:
         angle = get_angle(right_shoulder, right_hip, right_knee)
@@ -76,17 +74,14 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
          '''
 
 # get angle between 3 points given x, y coordinates
-
 def get_angle(a: tuple, b: tuple, c: tuple):
     return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
-
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
    #  with open("distance.txt", "a") as f:
    #      f.write(str(distance) + "\n")
     return distance
-
 
 def map_keypoint_to_image_coords(keypoint, image_size):
     """Second helper function to convert relative keypoint coordinates to
@@ -110,7 +105,6 @@ def map_keypoint_to_image_coords(keypoint, image_size):
     y *= height
     # because coordinates need to be type:int for cv2 object
     return int(x), int(y)
-
 
 def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
     """
@@ -169,7 +163,9 @@ def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code
     )
 
 def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
-
+    '''
+    Draw the black box backgroud for count and timer and, print updated timer values
+    '''
     time_left = end_time - current_time
 
     cv2.rectangle(
