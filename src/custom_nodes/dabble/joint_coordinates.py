@@ -78,11 +78,8 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
          '''
 
 # get angle between 3 points given x, y coordinates
-
-
 def get_angle(a: tuple, b: tuple, c: tuple):
     return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
-
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
@@ -90,14 +87,11 @@ def get_distance(a: tuple, b: tuple):
         f.write(str(distance) + "\n")
     return distance
 
-
-"""
-given a text file containing angles, return range of acceptable points.
-    this removes outliers, and also demarcates the range of acceptable reps.
-"""
-
-
 def getAngleRange(inputFilePath):
+    """
+    given a text file containing angles, return range of acceptable points.
+    this removes outliers, and also demarcates the range of acceptable reps.
+    """
     with open(inputFilePath) as f:
         data = f.readlines()
         data = [float(x.strip()) for x in data]
@@ -111,15 +105,12 @@ def getAngleRange(inputFilePath):
         print(min_point, max_point)
         return min_point, max_point
 
-
 def writeAngleCal(outputFilePath, knee, hip, shoulder):
     with open(outputFilePath, "a") as f:
         angle = get_angle(knee, hip, shoulder)
         f.write(str(angle) + "\n")
 
 # given an input calibration file, return a tuple of min, max points with scaling
-
-
 def map_keypoint_to_image_coords(keypoint, image_size):
     """Second helper function to convert relative keypoint coordinates to
     absolute image coordinates.
@@ -142,7 +133,6 @@ def map_keypoint_to_image_coords(keypoint, image_size):
     y *= height
     # because coordinates need to be type:int for cv2 object
     return int(x), int(y)
-
 
 def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
     """
@@ -184,7 +174,6 @@ def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoi
             thickness=2,
         )
 
-
 def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code=GREY, thickness=-1):
     """
     Draw box for metadata
@@ -200,7 +189,6 @@ def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code
         color=color_code,
         thickness=thickness
     )
-
 
 def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
     '''
@@ -241,7 +229,6 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
         end_timer = True
 
     return end_timer
-
 
 def draw_counter_text(img, img_size, count: int):
 
@@ -316,8 +303,6 @@ def draw_ippt_box(img, img_size):
 
 
 # Given a text file, fit and return a scaler
-
-
 def get_scaler(file_name):
     with open(file_name) as f:
         data = f.readlines()
@@ -326,7 +311,6 @@ def get_scaler(file_name):
         sta = StandardScaler()
         data = sta.fit_transform(data)
         return sta
-
 
 def check_spine_alignment(right_shoulder, right_hip, right_knee, minNoise, maxNoise, minRange, maxRange, scaler):
     if right_shoulder and right_hip and right_knee:
@@ -340,7 +324,6 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, minNoise, maxNo
             return False
         return True
 
-
 def depth_file_denoizer(coordinates_txt_file: str):
     '''
     Parse all the depth values in a txt file and replace them with only the denoised maximum and minimum in the txt file
@@ -349,6 +332,8 @@ def depth_file_denoizer(coordinates_txt_file: str):
     with open(coordinates_txt_file, 'r') as file:
         data = [float(line) for line in file]
         data = data[0:]
+        left_cutoff, right_cutoff = int(len(data) * 0.1), int(len(data) * 0.9)
+        data = data[left_cutoff:right_cutoff]
         mean = sum(data)/len(data)
         stdev = statistics.stdev(data)
         upper_bound = mean + stdev
@@ -356,9 +341,28 @@ def depth_file_denoizer(coordinates_txt_file: str):
 
     denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
 
+    open(coordinates_txt_file, 'w').close()
     with open(coordinates_txt_file, 'w') as file:
         file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
+def check_orientation(img_size:tuple, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle) -> bool:
+    """
+    Check if the user's right side is facing the camera.
+    Shoulders and wrists should be to the right 40% of the img,
+    ankles should be lower than the shoulders and wrist and on the left 40% of img
+    
+    inputs: all respective keypoints
+    """
+
+    left_limit, right_limit = int(0.4 * img_size[0]), int(0.6 * img_size[0])
+
+    if (right_wrist[0] >= right_limit) and (left_wrist[0] >= right_limit) and (right_shoulder[0] >= right_limit) and (left_shoulder[0] >= right_limit):
+        if (right_ankle[0] <= left_limit) and (left_ankle[0] <= left_limit):
+            if (right_ankle[1] > right_shoulder[1]) and (right_ankle[1] > left_shoulder[1]):
+                if (left_ankle[1] > right_shoulder[1]) and (left_ankle[1] > left_shoulder[1]):
+                    return True
+
+    return False
 
 class Node(AbstractNode):
     """This is a template class of how to write a node for PeekingDuck.
@@ -396,6 +400,9 @@ class Node(AbstractNode):
         self.sta = StandardScaler()  # for scaling values
         # self.scaler = get_scaler('proper_angle.txt') @Nigel
 
+        # check if user is facing the right
+        self.orientationisright = False
+
         # Check if the system has been calibrated to start testing, else calibrate first
         if os.path.isfile('distance.txt'):
             print('Distance calibrated! IPPT in progress...')
@@ -431,11 +438,11 @@ class Node(AbstractNode):
         """This node does ___.
 
         Args:
-           inputs (dict): Dictionary with keys
-              "img", "keypoints", "keypoint_scores"
+            inputs (dict): Dictionary with keys
+                "img", "keypoints", "keypoint_scores"
 
         Returns:
-           outputs (dict): Dictionary with keys "__".
+            outputs (dict): Dictionary with keys "__".
         """
 
         # variables
@@ -550,50 +557,73 @@ class Node(AbstractNode):
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
             if right_wrist and right_shoulder:
-                wrist_to_shoulder_distance = get_distance(
-                    right_wrist, right_shoulder)
+                wrist_to_shoulder_distance = get_distance(right_wrist, right_shoulder)
 
-            if self.isCalibrated == True:
-                # Run actual test
-                # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
-                if wrist_to_shoulder_distance <= self.pushupBottomHeight:
-                    self.isLowEnough = True
-                    print('Low enough')
+            if self.orientationisright:
 
-                if self.isLowEnough and wrist_to_shoulder_distance >= self.pushupTopHeight:
-                    self.isHighEnough = True
-                    print('High enough')
+                if self.isCalibrated == True:
+                    # Run actual test
+                    # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
+                    if wrist_to_shoulder_distance <= self.pushupBottomHeight:
+                        self.isLowEnough = True
+                        print('Low enough')
 
-                if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
-                    self.isHighEnough = False
-                    self.isLowEnough = False
-                    self.pushupCount += 1
-                    print(self.pushupCount)
+                    if self.isLowEnough and wrist_to_shoulder_distance >= self.pushupTopHeight:
+                        self.isHighEnough = True
+                        print('High enough')
 
-                if self.pushupCount == 1:
-                    self.start_time = time.time()
-                    self.end_time = self.start_time + 40
-                    self.timer = True
-                    self.timer_has_started = True
-                    self.counterGUI = True
-            else:
-                # Run distance calibration
-                # print out on a text file called distance.txt
-                with open("distance.txt", "a") as f:
-                    f.write(str(wrist_to_shoulder_distance) + "\n")
+                        if wrist_to_shoulder_distance >= self.pushupTopHeight:
+                            self.isHighEnough = True
 
-            if right_shoulder and right_hip and right_knee:
-                if self.angleCalibrated:
-                    spine_aligned = check_spine_alignment(
-                        right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
-                else:   # default values w/o user calibration
-                    writeAngleCal("angle.txt", right_knee,
-                                  right_hip, right_shoulder)
-                    spine_aligned = check_spine_alignment(
-                        right_shoulder, right_hip, right_knee, -1.5, 1.5, -1.19, 1.19, self.defaultAngleScaler)
-                if spine_aligned == False:
-                    print("Spine not aligned")  # debug
-                    self.spineAligned = False
+                        if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
+                            self.isHighEnough = False
+                            self.isLowEnough = False
+                            self.pushupCount += 1
+                            print(self.pushupCount)
+
+                        if self.pushupCount == 1:
+                            self.start_time = time.time()
+                            self.end_time = self.start_time + 30
+                            self.timer = True
+                            self.timer_has_started = True
+                            self.counterGUI = True
+                    else:
+                        # Run calibration
+                        # print out on a text file called distance.txt
+                        with open("distance.txt", "a") as f:
+                            f.write(str(wrist_to_shoulder_distance) + "\n")
+
+                    if right_shoulder and right_hip and right_knee:
+                        if self.angleCalibrated:
+                            spine_aligned = check_spine_alignment(
+                                right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
+                        else:   # default values w/o user calibration
+                            writeAngleCal("angle.txt", right_knee,
+                                        right_hip, right_shoulder)
+                            spine_aligned = check_spine_alignment(
+                                right_shoulder, right_hip, right_knee, -1.5, 1.5, -1.19, 1.19, self.defaultAngleScaler)
+                        if spine_aligned == False:
+                            print("Spine not aligned")  # debug
+                            self.spineAligned = False
+
+                    if self.pushupCount == 1:
+                        self.start_time = time.time()
+                        self.end_time = self.start_time + 40
+                        self.timer = True
+                        self.timer_has_started = True
+                        self.counterGUI = True
+                else:
+                    # Run distance calibration
+                    # print out on a text file called distance.txt
+                    with open("distance.txt", "a") as f:
+                        f.write(str(wrist_to_shoulder_distance) + "\n")
+
+            elif right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
+                self.orientationisright = check_orientation(img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
+                    
+            
+            print(self.orientationisright)
+
         return {}
 
         # result = do_something(inputs["in1"], inputs["in2"])
