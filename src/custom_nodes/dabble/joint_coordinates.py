@@ -577,7 +577,6 @@ class Node(AbstractNode):
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
             if self.orientationisright:
-                print("Orientation is right!")
 
                 if right_wrist and right_shoulder:
                     wrist_to_shoulder_distance = get_distance(
@@ -626,6 +625,8 @@ class Node(AbstractNode):
                 if right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                     self.orientationisright = check_orientation(
                         img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
+                    print("Orientation is right!")
+                else:
                     print('Face your right to the camera!')
 
         return {}
