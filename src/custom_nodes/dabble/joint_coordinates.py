@@ -475,6 +475,9 @@ class Node(AbstractNode):
 
         # Check if the system has been calibrated to start testing, else calibrate first
         if os.path.exists('distance.txt'):
+            if not os.path.exists('angle.txt'):
+                os.remove('distance.txt')
+                raise Exception("Please calibrate angle first, removed distance. \n Please run again.")
             print('Distance calibrated! IPPT in progress...')
             self.isCalibrated = True
             # Get calibrated max min values
@@ -486,6 +489,9 @@ class Node(AbstractNode):
             print("Push up top height = ", self.pushupTopHeight)
             print("Push up bottom height = ", self.pushupBottomHeight)
         else:
+            if os.path.exists('angle.txt'):
+                os.remove('angle.txt')
+                raise Exception("Please calibrate distance first, removed angle. \n Please run again.")
             self.isCalibrated = False
             print('Calibrating distance now...')
 
