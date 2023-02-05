@@ -5,7 +5,7 @@ nodes:
       # source: 0
   - model.posenet
   - dabble.fps
-  - custom_nodes.dabble.joint_coordinates # --> we use this as reference
+  - custom_nodes.dabble.repetuition # --> we use this as reference
   - draw.poses
   # - draw.legend:
   #     show: ["fps"]
