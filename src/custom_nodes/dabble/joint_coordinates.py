@@ -616,13 +616,6 @@ class Node(AbstractNode):
                         self.pushupCount += 1
                         print(self.pushupCount)
 
-                    if self.pushupCount == 1:
-                        self.start_time = time.time()
-                        self.end_time = self.start_time + 30
-                        self.timer = True
-                        self.timer_has_started = True
-                        self.counterGUI = True
-
                 elif self.isCalibrated == False:
                     # Run distance calibration
                     # print out on a text file called distance.txt
