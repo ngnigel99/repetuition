@@ -1,8 +1,8 @@
 nodes:
   - input.visual:
-      source: "edly_vid2.mp4"
+      # source: "edly_vid2.mp4"
       # source: "hemanth_vid.mov"
-      # source: 0
+      source: 0
   - model.posenet
   - dabble.fps
   - custom_nodes.dabble.repetuition # --> we use this as reference
