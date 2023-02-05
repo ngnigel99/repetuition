@@ -86,8 +86,8 @@ def get_angle(a: tuple, b: tuple, c: tuple):
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-    with open("distance.txt", "a") as f:
-        f.write(str(distance) + "\n")
+    # with open("distance.txt", "a") as f:
+    #     f.write(str(distance) + "\n")
     return distance
 
 def getAngleRange(inputFilePath):
@@ -340,7 +340,7 @@ def depth_file_denoizer(coordinates_txt_file: str):
     with open(coordinates_txt_file, 'r') as file:
         data = [float(line) for line in file]
         data = data[0:]
-        left_cutoff, right_cutoff = int(len(data) * 0.1), int(len(data) * 0.9)
+        left_cutoff, right_cutoff = int(len(data) * 0.15), int(len(data) * 0.85)
         data = data[left_cutoff:right_cutoff]
         mean = sum(data)/len(data)
         stdev = statistics.stdev(data)
@@ -349,9 +349,10 @@ def depth_file_denoizer(coordinates_txt_file: str):
 
     denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
 
-    open(coordinates_txt_file, 'w').close()
-    with open(coordinates_txt_file, 'w') as file:
-        file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
+    return max(denoized_data), min(denoized_data)
+    # open(coordinates_txt_file, 'w').close()
+    # with open(coordinates_txt_file, 'w') as file:
+    #     file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
 def check_orientation(img_size:tuple, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle) -> bool:
     """
@@ -412,19 +413,14 @@ class Node(AbstractNode):
         self.orientationisright = False
 
         # Check if the system has been calibrated to start testing, else calibrate first
-        if os.path.isfile('distance.txt'):
+        if os.path.exists('distance.txt'):
             print('Distance calibrated! IPPT in progress...')
             self.isCalibrated = True
             # Get calibrated max min values
-            depth_file_denoizer('distance.txt')
-            distanceFile = open('distance.txt', 'r')
-            Lines = [float(line) for line in distanceFile]
-            Lines = Lines[0:]
-            difference = Lines[0] - Lines[1]
-            self.pushupTopHeight = Lines[0] - 0.3*difference
-            self.pushupBottomHeight = Lines[1] + 0.2*difference
-            print('Max = ' + str(self.pushupTopHeight))
-            print('Min = ' + str(self.pushupBottomHeight))
+            self.pushupTopHeight, self.pushupBottomHeight = depth_file_denoizer('distance.txt')
+            difference = self.pushupTopHeight - self.pushupBottomHeight
+            self.pushupTopHeight -= 0.3*difference
+            self.pushupBottomHeight += 0.2*difference
         else:
             self.isCalibrated = False
             print('Calibrating distance now...')
@@ -616,6 +612,12 @@ class Node(AbstractNode):
                 # print out on a text file called distance.txt
                 writeDistance("distance.txt", wrist_to_shoulder_distance)
                 writeAngle("angle.txt", right_knee, right_hip, right_shoulder)
+                else:
+                    # Run distance calibration
+                    # print out on a text file called distance.txt
+                    with open("distance.txt", "a") as f:
+                        if wrist_to_shoulder_distance > 0:
+                            f.write(str(wrist_to_shoulder_distance) + "\n")
 
             elif right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                 self.orientationisright = check_orientation(img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
