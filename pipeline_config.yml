@@ -1,12 +1,9 @@
 nodes:
   - input.visual:
-      # source: "edly_vid2.mp4"
-      # source: "hemanth_vid.mov"
+      # source: "calibration.MOV"
+      # source: "test.MOV"
       source: 0
   - model.posenet
-  - dabble.fps
-  - custom_nodes.dabble.repetuition # --> we use this as reference
+  - custom_nodes.dabble.repetuition
   - draw.poses
-  # - draw.legend:
-  #     show: ["fps"]
   - output.screen
