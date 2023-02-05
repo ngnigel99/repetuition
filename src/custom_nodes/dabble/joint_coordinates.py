@@ -81,14 +81,18 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, right_ankle):
          '''
 
 # get angle between 3 points given x, y coordinates
+
+
 def get_angle(a: tuple, b: tuple, c: tuple):
     return math.degrees(math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0]))
+
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
     # with open("distance.txt", "a") as f:
     #     f.write(str(distance) + "\n")
     return distance
+
 
 def getAngleRange(inputFilePath):
     """
@@ -108,10 +112,12 @@ def getAngleRange(inputFilePath):
         print(min_point, max_point)
         return min_point, max_point
 
+
 def writeAngle(outputFilePath, knee, hip, shoulder):
     with open(outputFilePath, "a") as f:
         angle = get_angle(knee, hip, shoulder)
         f.write(str(angle) + "\n")
+
 
 def writeDistance(outputFilePath, distance):
     with open(outputFilePath, "a") as f:
@@ -119,6 +125,8 @@ def writeDistance(outputFilePath, distance):
             f.write(str(distance) + "\n")
 
 # given an input calibration file, return a tuple of min, max points with scaling
+
+
 def map_keypoint_to_image_coords(keypoint, image_size):
     """Second helper function to convert relative keypoint coordinates to
     absolute image coordinates.
@@ -141,6 +149,7 @@ def map_keypoint_to_image_coords(keypoint, image_size):
     y *= height
     # because coordinates need to be type:int for cv2 object
     return int(x), int(y)
+
 
 def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
     """
@@ -182,6 +191,7 @@ def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoi
             thickness=2,
         )
 
+
 def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code=GREY, thickness=-1):
     """
     Draw box for metadata
@@ -197,6 +207,7 @@ def draw_debug_console(img, start_point=(0.8, 0), end_point=(1, 0.6), color_code
         color=color_code,
         thickness=thickness
     )
+
 
 def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
     '''
@@ -237,6 +248,7 @@ def draw_timer_box(img, current_time: int, end_time: int, img_size: tuple):
         end_timer = True
 
     return end_timer
+
 
 def draw_counter_text(img, img_size, count: int):
 
@@ -320,6 +332,7 @@ def get_scaler(file_name):
         data = sta.fit_transform(data)
         return sta
 
+
 def check_spine_alignment(right_shoulder, right_hip, right_knee, minNoise, maxNoise, minRange, maxRange, scaler):
     if right_shoulder and right_hip and right_knee:
         angle = get_angle(right_knee, right_hip, right_shoulder)
@@ -332,6 +345,7 @@ def check_spine_alignment(right_shoulder, right_hip, right_knee, minNoise, maxNo
             return False
         return True
 
+
 def depth_file_denoizer(coordinates_txt_file: str):
     '''
     Parse all the depth values in a txt file and replace them with only the denoised maximum and minimum in the txt file
@@ -340,7 +354,8 @@ def depth_file_denoizer(coordinates_txt_file: str):
     with open(coordinates_txt_file, 'r') as file:
         data = [float(line) for line in file]
         data = data[0:]
-        left_cutoff, right_cutoff = int(len(data) * 0.15), int(len(data) * 0.85)
+        left_cutoff, right_cutoff = int(
+            len(data) * 0.15), int(len(data) * 0.85)
         data = data[left_cutoff:right_cutoff]
         mean = sum(data)/len(data)
         stdev = statistics.stdev(data)
@@ -354,12 +369,13 @@ def depth_file_denoizer(coordinates_txt_file: str):
     # with open(coordinates_txt_file, 'w') as file:
     #     file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
-def check_orientation(img_size:tuple, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle) -> bool:
+
+def check_orientation(img_size: tuple, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle) -> bool:
     """
     Check if the user's right side is facing the camera.
     Shoulders and wrists should be to the right 40% of the img,
     ankles should be lower than the shoulders and wrist and on the left 40% of img
-    
+
     inputs: all respective keypoints
     """
 
@@ -372,6 +388,7 @@ def check_orientation(img_size:tuple, right_wrist, right_shoulder, right_ankle, 
                     return True
 
     return False
+
 
 class Node(AbstractNode):
     """This is a template class of how to write a node for PeekingDuck.
@@ -417,7 +434,8 @@ class Node(AbstractNode):
             print('Distance calibrated! IPPT in progress...')
             self.isCalibrated = True
             # Get calibrated max min values
-            self.pushupTopHeight, self.pushupBottomHeight = depth_file_denoizer('distance.txt')
+            self.pushupTopHeight, self.pushupBottomHeight = depth_file_denoizer(
+                'distance.txt')
             difference = self.pushupTopHeight - self.pushupBottomHeight
             self.pushupTopHeight -= 0.3*difference
             self.pushupBottomHeight += 0.2*difference
@@ -436,7 +454,6 @@ class Node(AbstractNode):
             self.minRange, self.maxRange = getAngleRange("angle.txt")
         else:
             print("Calibrating angle now...")
-
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         """This node does ___.
@@ -560,63 +577,68 @@ class Node(AbstractNode):
                     draw_debug_text(img, right_ankle,
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
-            if right_wrist and right_shoulder:
-                    wrist_to_shoulder_distance = get_distance(right_wrist, right_shoulder)
+            if self.orientationisright:
 
-            if self.orientationisright and self.isCalibrated:
-                # start timer on first pushup
-                if self.pushupCount == 1:
-                    self.start_time = time.time()
-                    self.end_time = self.start_time + TEST_TIME 
-                    self.timer = True
-                    self.timer_has_started = True
-                    self.counterGUI = True
+                if right_wrist and right_shoulder:
+                    wrist_to_shoulder_distance = get_distance(
+                        right_wrist, right_shoulder)
 
-                if right_shoulder and right_hip and right_knee:
-                    spine_aligned = check_spine_alignment(
-                            right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
-
-                # Run actual test
-                # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
-                if wrist_to_shoulder_distance <= self.pushupBottomHeight: 
-                    self.isLowEnough = True
-                    print('Low enough')
-
-                if self.isLowEnough and wrist_to_shoulder_distance >= self.pushupTopHeight:
-                    self.isHighEnough = True
-                    print('High enough')
-
-                    if wrist_to_shoulder_distance >= self.pushupTopHeight:
-                        self.isHighEnough = True
-
-                    if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
-                        self.isHighEnough = False
-                        self.isLowEnough = False
-                        self.spineAligned = True    # add additional check for spine not aligned
-                        self.pushupCount += 1
-                        print(self.pushupCount)
-
+                if self.isCalibrated:
+                    # start timer on first pushup
                     if self.pushupCount == 1:
                         self.start_time = time.time()
-                        self.end_time = self.start_time + 30
+                        self.end_time = self.start_time + TEST_TIME
                         self.timer = True
                         self.timer_has_started = True
                         self.counterGUI = True
 
-                    if spine_aligned == False:
-                        print("Spine not aligned")  # debug
-                        self.spineAligned = False
+                    if right_shoulder and right_hip and right_knee:
+                        spine_aligned = check_spine_alignment(
+                            right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
 
-            elif self.isCalibrated == False:
-                # Run distance calibration
-                # print out on a text file called distance.txt
-                writeDistance("distance.txt", wrist_to_shoulder_distance)
-                writeAngle("angle.txt", right_knee, right_hip, right_shoulder)
+                    # Run actual test
+                    # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
+                    if wrist_to_shoulder_distance <= self.pushupBottomHeight:
+                        self.isLowEnough = True
+                        print('Low enough')
 
-            elif right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
-                self.orientationisright = check_orientation(img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
-                    
-            print(self.orientationisright)
+                    if self.isLowEnough and wrist_to_shoulder_distance >= self.pushupTopHeight:
+                        self.isHighEnough = True
+                        print('High enough')
+
+                        if wrist_to_shoulder_distance >= self.pushupTopHeight:
+                            self.isHighEnough = True
+
+                        if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
+                            self.isHighEnough = False
+                            self.isLowEnough = False
+                            self.spineAligned = True    # add additional check for spine not aligned
+                            self.pushupCount += 1
+                            print(self.pushupCount)
+
+                        if self.pushupCount == 1:
+                            self.start_time = time.time()
+                            self.end_time = self.start_time + 30
+                            self.timer = True
+                            self.timer_has_started = True
+                            self.counterGUI = True
+
+                        if spine_aligned == False:
+                            print("Spine not aligned")  # debug
+                            self.spineAligned = False
+
+                elif self.isCalibrated == False:
+                    # Run distance calibration
+                    # print out on a text file called distance.txt
+                    writeDistance("distance.txt", wrist_to_shoulder_distance)
+                    writeAngle("angle.txt", right_knee,
+                               right_hip, right_shoulder)
+
+            elif not self.orientationisright:
+                if right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
+                    self.orientationisright = check_orientation(
+                        img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
+                    print("Orientation is right!")
 
         return {}
 
