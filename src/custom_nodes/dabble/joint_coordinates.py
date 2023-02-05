@@ -320,7 +320,32 @@ def draw_ippt_box(img, img_size):
     )
 
 
+def draw_right_box(img, img_size):
+    '''
+    Draw the black box & text when the user is facing the wrong side
+    '''
+
+    cv2.rectangle(
+        img=img,
+        pt1=(map_keypoint_to_image_coords((0.4, 0.4), img_size)),
+        pt2=(map_keypoint_to_image_coords((0.6, 0.6), img_size)),
+        color=BLACK,
+        thickness=-1
+    )
+
+    cv2.putText(
+        img=img,
+        text="Face your right to the camera",
+        org=(map_keypoint_to_image_coords((0.41, 0.46), img_size)),
+        fontFace=FONT,
+        fontScale=0.9,
+        color=WHITE,
+        thickness=2,
+    )
+
 # Given a text file, fit and return a scaler
+
+
 def get_scaler(file_name):
     with open(file_name) as f:
         data = f.readlines()
@@ -504,6 +529,8 @@ class Node(AbstractNode):
                 draw_ippt_box(img, img_size)
             if self.isCalibrated == False:
                 draw_calibrate_box(img, img_size)
+            if self.orientationisright == False:
+                draw_right_box(img, img_size)
 
             for i, keypoints in enumerate(the_keypoints):
                 keypoint_score = the_keypoint_scores[i]
