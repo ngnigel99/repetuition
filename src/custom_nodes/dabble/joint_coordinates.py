@@ -328,15 +328,25 @@ def draw_right_box(img, img_size):
     cv2.rectangle(
         img=img,
         pt1=(map_keypoint_to_image_coords((0.4, 0.4), img_size)),
-        pt2=(map_keypoint_to_image_coords((0.6, 0.6), img_size)),
+        pt2=(map_keypoint_to_image_coords((0.70, 0.6), img_size)),
         color=BLACK,
         thickness=-1
     )
 
     cv2.putText(
         img=img,
-        text="Face your right to the camera",
+        text="Face your right",
         org=(map_keypoint_to_image_coords((0.41, 0.46), img_size)),
+        fontFace=FONT,
+        fontScale=0.9,
+        color=WHITE,
+        thickness=2,
+    )
+
+    cv2.putText(
+        img=img,
+        text="to the camera",
+        org=(map_keypoint_to_image_coords((0.41, 0.56), img_size)),
         fontFace=FONT,
         fontScale=0.9,
         color=WHITE,
@@ -647,12 +657,12 @@ class Node(AbstractNode):
                                right_hip, right_shoulder)
 
             elif not self.orientationisright:
+                print('Face your right to the camera!')
                 if right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                     self.orientationisright = check_orientation(
                         img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
-                    print("Orientation is right!")
-                else:
-                    print('Face your right to the camera!')
+                    if (self.orientationisright) == True:
+                        print("Orientation is right!")
 
         return {}
 
