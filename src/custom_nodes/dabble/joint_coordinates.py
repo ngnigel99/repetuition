@@ -28,7 +28,7 @@ BLUE = (255, 0, 0)
 GREY = (178, 178, 178)
 
 # threshold
-THRESHOLD = 0.6
+THRESHOLD = 0.4
 
 # test time given
 TEST_TIME = 60
@@ -149,7 +149,7 @@ def map_keypoint_to_image_coords(keypoint, image_size):
     return int(x), int(y)
 
 
-def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoint: int):
+def draw_debug_text(img, coordinates, color_code, img_size: tuple, keypoint: int):
     """
     Helper function to draw the coordinate texts for joints
 
@@ -159,20 +159,21 @@ def draw_debug_text(img, coordinates: tuple, color_code, img_size: tuple, keypoi
     img_size: int tuple image dimensions
     keypoint: GLOBAL VARIABLE for joint keypoint
     """
-
-    x, y = coordinates[0], coordinates[1]
-    x_y_str = f"({x}, {y})"
-
-    if BODY_COORDINATE:
-        cv2.putText(
-            img=img,
-            text=x_y_str,
-            org=(x, y),
-            fontFace=FONT,
-            fontScale=0.4,
-            color=color_code,
-            thickness=2,
+    if type(coordinates) is tuple:
+        x, y = coordinates[0], coordinates[1]
+        x_y_str = f"({x}, {y})"
+        if BODY_COORDINATE:
+            cv2.putText(
+                img=img,
+                text=x_y_str,
+                org=(x, y),
+                fontFace=FONT,
+                fontScale=0.4,
+                color=color_code,
+                thickness=2,
         )
+    else:
+        x_y_str = "UNDETECTED"
 
     if DEBUG_CONSOLE:
 
@@ -399,6 +400,20 @@ class Node(AbstractNode):
         # configs can be called by self.<config_name> e.g. self.filepath
         # self.logger.info(f"model loaded with configs: config")
 
+        # body keypoints
+        self.left_shoulder = None
+        self.right_shoulder = None
+        self.left_elbow = None
+        self.right_elbow = None
+        self.left_wrist = None
+        self.right_wrist = None
+        self.left_hip = None
+        self.right_hip = None
+        self.left_knee = None
+        self.right_knee = None
+        self.left_ankle = None
+        self.right_ankle = None
+
         # system attributes
         self.isCalibrated = True
 
@@ -469,24 +484,10 @@ class Node(AbstractNode):
         keypoints = inputs["keypoints"]
         keypoint_scores = inputs["keypoint_scores"]
         # --> vector coordinates for lines connecting joints
-        keypoint_conns = inputs["keypoint_conns"]
+        # keypoint_conns = inputs["keypoint_conns"]
 
         # derived inputs from raw inputs
         img_size = (img.shape[1], img.shape[0])
-
-        # pre-declaring co-ordinates
-        left_shoulder = None
-        right_shoulder = None
-        left_elbow = None
-        right_elbow = None
-        left_wrist = None
-        right_wrist = None
-        left_hip = None
-        right_hip = None
-        left_knee = None
-        right_knee = None
-        left_ankle = None
-        right_ankle = None
 
         # detecting keypoints on screen
         if len(keypoints) >= 1:  # check if can do == 1
@@ -509,82 +510,60 @@ class Node(AbstractNode):
                 keypoint_score = the_keypoint_scores[i]
 
                 if keypoint_score >= THRESHOLD:
+                    threshold_pass = True
                     threshold_color = GREEN
                 else:
+                    threshold_pass = False
                     threshold_color = RED
 
                 if i == KP_LEFT_SHOULDER:
-                    left_shoulder = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, left_shoulder,
-                                    threshold_color, img_size, KP_LEFT_SHOULDER)
+                    if threshold_pass: self.left_shoulder = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.left_shoulder, threshold_color, img_size, KP_LEFT_SHOULDER)
                 elif i == KP_RIGHT_SHOULDER:
-                    right_shoulder = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, right_shoulder,
-                                    threshold_color, img_size, KP_RIGHT_SHOULDER)
+                    if threshold_pass: self.right_shoulder = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.right_shoulder, threshold_color, img_size, KP_RIGHT_SHOULDER)
                 elif i == KP_LEFT_ELBOW:
-                    left_elbow = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, left_elbow,
-                                    threshold_color, img_size, KP_LEFT_ELBOW)
+                    if threshold_pass: self.left_elbow = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.left_elbow, threshold_color, img_size, KP_LEFT_ELBOW)
                 elif i == KP_RIGHT_ELBOW:
-                    right_elbow = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, right_elbow,
-                                    threshold_color, img_size, KP_RIGHT_ELBOW)
+                    if threshold_pass: self.right_elbow = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.right_elbow, threshold_color, img_size, KP_RIGHT_ELBOW)
                 elif i == KP_LEFT_WRIST:
-                    left_wrist = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, left_wrist,
-                                    threshold_color, img_size, KP_LEFT_WRIST)
+                    if threshold_pass: self.left_wrist = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.left_wrist, threshold_color, img_size, KP_LEFT_WRIST)
                 elif i == KP_RIGHT_WRIST:
-                    right_wrist = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, right_wrist,
-                                    threshold_color, img_size, KP_RIGHT_WRIST)
+                    if threshold_pass: self.right_wrist = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.right_wrist, threshold_color, img_size, KP_RIGHT_WRIST)
                 elif i == KP_LEFT_HIP:
-                    left_hip = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(
-                        img, left_hip, threshold_color, img_size, KP_LEFT_HIP)
+                    if threshold_pass: self.left_hip = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.left_hip, threshold_color, img_size, KP_LEFT_HIP)
                 elif i == KP_RIGHT_HIP:
-                    right_hip = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(
-                        img, right_hip, threshold_color, img_size, KP_RIGHT_HIP)
+                    if threshold_pass: self.right_hip = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.right_hip, threshold_color, img_size, KP_RIGHT_HIP)
                 elif i == KP_LEFT_KNEE:
-                    left_knee = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(
-                        img, left_knee, threshold_color, img_size, KP_LEFT_KNEE)
+                    if threshold_pass: self.left_knee = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.left_knee, threshold_color, img_size, KP_LEFT_KNEE)
                 elif i == KP_RIGHT_KNEE:
-                    right_knee = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, right_knee,
-                                    threshold_color, img_size, KP_RIGHT_KNEE)
+                    if threshold_pass: self.right_knee = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.right_knee, threshold_color, img_size, KP_RIGHT_KNEE)
                 elif i == KP_LEFT_ANKLE:
-                    left_ankle = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, left_ankle,
-                                    threshold_color, img_size, KP_LEFT_ANKLE)
+                    if threshold_pass: self.left_ankle = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.left_ankle, threshold_color, img_size, KP_LEFT_ANKLE)
                 elif i == KP_RIGHT_ANKLE:
-                    right_ankle = (map_keypoint_to_image_coords(
-                        keypoints.tolist(), img_size))
-                    draw_debug_text(img, right_ankle,
-                                    threshold_color, img_size, KP_RIGHT_ANKLE)
+                    if threshold_pass: self.right_ankle = (map_keypoint_to_image_coords(keypoints.tolist(), img_size))
+                    draw_debug_text(img, self.right_ankle, threshold_color, img_size, KP_RIGHT_ANKLE)
 
             if self.orientationisright:
 
-                if right_wrist and right_shoulder:
+                if self.right_wrist and self.right_shoulder:
                     wrist_to_shoulder_distance = get_distance(
-                        right_wrist, right_shoulder)
+                        self.right_wrist, self.right_shoulder)
 
                 if self.isCalibrated:
 
-                    if right_shoulder and right_hip and right_knee:
+                    if self.right_shoulder and self.right_hip and self.right_knee:
                         self.spineAligned = check_spine_alignment(
-                            right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
+                            self.right_shoulder, self.right_hip, self.right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
                         if self.spineAligned == False:
                             print('Spine not aligned!')
 
@@ -616,13 +595,13 @@ class Node(AbstractNode):
                     # Run distance calibration
                     # print out on a text file called distance.txt
                     writeDistance("distance.txt", wrist_to_shoulder_distance)
-                    writeAngle("angle.txt", right_knee,
-                               right_hip, right_shoulder)
+                    writeAngle("angle.txt", self.right_knee,
+                               self.right_hip, self.right_shoulder)
 
             elif not self.orientationisright:
-                if right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
+                if self.right_wrist and self.right_shoulder and self.right_ankle and self.left_wrist and self.left_shoulder and self.left_ankle:
                     self.orientationisright = check_orientation(
-                        img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
+                        img_size, self.right_wrist, self.right_shoulder, self.right_ankle, self.left_wrist, self.left_shoulder, self.left_ankle)
                     print("Orientation is right!")
                 else:
                     print('Face your right to the camera!')
