@@ -365,9 +365,6 @@ def depth_file_denoizer(coordinates_txt_file: str):
     denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
 
     return max(denoized_data), min(denoized_data)
-    # open(coordinates_txt_file, 'w').close()
-    # with open(coordinates_txt_file, 'w') as file:
-    #     file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
 
 def check_orientation(img_size: tuple, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle) -> bool:
