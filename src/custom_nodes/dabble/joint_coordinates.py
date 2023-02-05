@@ -332,7 +332,7 @@ def depth_file_denoizer(coordinates_txt_file: str):
     with open(coordinates_txt_file, 'r') as file:
         data = [float(line) for line in file]
         data = data[0:]
-        left_cutoff, right_cutoff = int(len(data) * 0.1), int(len(data) * 0.9)
+        left_cutoff, right_cutoff = int(len(data) * 0.15), int(len(data) * 0.85)
         data = data[left_cutoff:right_cutoff]
         mean = sum(data)/len(data)
         stdev = statistics.stdev(data)
