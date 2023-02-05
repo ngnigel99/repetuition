@@ -341,9 +341,10 @@ def depth_file_denoizer(coordinates_txt_file: str):
 
     denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
 
-    open(coordinates_txt_file, 'w').close()
-    with open(coordinates_txt_file, 'w') as file:
-        file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
+    return max(denoized_data), min(denoized_data)
+    # open(coordinates_txt_file, 'w').close()
+    # with open(coordinates_txt_file, 'w') as file:
+    #     file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
 def check_orientation(img_size:tuple, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle) -> bool:
     """
@@ -404,19 +405,14 @@ class Node(AbstractNode):
         self.orientationisright = False
 
         # Check if the system has been calibrated to start testing, else calibrate first
-        if os.path.isfile('distance.txt'):
+        if os.path.exists('distance.txt'):
             print('Distance calibrated! IPPT in progress...')
             self.isCalibrated = True
             # Get calibrated max min values
-            depth_file_denoizer('distance.txt')
-            distanceFile = open('distance.txt', 'r')
-            Lines = [float(line) for line in distanceFile]
-            Lines = Lines[0:]
-            difference = Lines[0] - Lines[1]
-            self.pushupTopHeight = Lines[0] - 0.3*difference
-            self.pushupBottomHeight = Lines[1] + 0.2*difference
-            print('Max = ' + str(self.pushupTopHeight))
-            print('Min = ' + str(self.pushupBottomHeight))
+            self.pushupTopHeight, self.pushupBottomHeight = depth_file_denoizer('distance.txt')
+            difference = self.pushupTopHeight - self.pushupBottomHeight
+            self.pushupTopHeight -= 0.3*difference
+            self.pushupBottomHeight += 0.2*difference
         else:
             self.isCalibrated = False
             print('Calibrating distance now...')
