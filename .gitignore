@@ -1,6 +1,5 @@
 pipeline_config.yml
 *.pyc
-*.mov
 *.mp4
 angle.txt
 distance.txt
