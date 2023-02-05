@@ -436,6 +436,8 @@ class Node(AbstractNode):
             difference = self.pushupTopHeight - self.pushupBottomHeight
             self.pushupTopHeight -= 0.3*difference
             self.pushupBottomHeight += 0.2*difference
+            print("Push up top height = ", self.pushupTopHeight)
+            print("Push up bottom height = ", self.pushupBottomHeight)
         else:
             self.isCalibrated = False
             print('Calibrating distance now...')
