@@ -578,6 +578,7 @@ class Node(AbstractNode):
                                     threshold_color, img_size, KP_RIGHT_ANKLE)
 
             if self.orientationisright:
+                print("Orientation is right!")
 
                 if right_wrist and right_shoulder:
                     wrist_to_shoulder_distance = get_distance(
@@ -593,8 +594,10 @@ class Node(AbstractNode):
                         self.counterGUI = True
 
                     if right_shoulder and right_hip and right_knee:
-                        spine_aligned = check_spine_alignment(
+                        self.spineAligned = check_spine_alignment(
                             right_shoulder, right_hip, right_knee, self.minNoise, self.maxNoise, self.minRange, self.maxRange, self.angleScaler)
+                        if self.spineAligned == False:
+                            print('Spine not aligned!')
 
                     # Run actual test
                     # check whether keypoints are  not aligned in a straight line. if so, increment count in output for debug
@@ -606,19 +609,19 @@ class Node(AbstractNode):
                         self.isHighEnough = True
                         print('High enough')
 
-                        if wrist_to_shoulder_distance >= self.pushupTopHeight:
-                            self.isHighEnough = True
+                    if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
+                        self.isHighEnough = False
+                        self.isLowEnough = False
+                        self.spineAligned = True    # add additional check for spine not aligned
+                        self.pushupCount += 1
+                        print(self.pushupCount)
 
-                        if self.isLowEnough and self.isHighEnough and self.timer_has_ended == False:
-                            self.isHighEnough = False
-                            self.isLowEnough = False
-                            self.spineAligned = True    # add additional check for spine not aligned
-                            self.pushupCount += 1
-                            print(self.pushupCount)
-
-                        if spine_aligned == False:
-                            print("Spine not aligned")  # debug
-                            self.spineAligned = False
+                    if self.pushupCount == 1:
+                        self.start_time = time.time()
+                        self.end_time = self.start_time + 30
+                        self.timer = True
+                        self.timer_has_started = True
+                        self.counterGUI = True
 
                 elif self.isCalibrated == False:
                     # Run distance calibration
@@ -631,7 +634,7 @@ class Node(AbstractNode):
                 if right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                     self.orientationisright = check_orientation(
                         img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
-                    print("Orientation is right!")
+                    print('Face your right to the camera!')
 
         return {}
 
