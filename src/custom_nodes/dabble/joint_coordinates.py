@@ -584,13 +584,6 @@ class Node(AbstractNode):
                         right_wrist, right_shoulder)
 
                 if self.isCalibrated:
-                    # start timer on first pushup
-                    if self.pushupCount == 1:
-                        self.start_time = time.time()
-                        self.end_time = self.start_time + TEST_TIME
-                        self.timer = True
-                        self.timer_has_started = True
-                        self.counterGUI = True
 
                     if right_shoulder and right_hip and right_knee:
                         self.spineAligned = check_spine_alignment(
@@ -614,6 +607,13 @@ class Node(AbstractNode):
                         self.spineAligned = True    # add additional check for spine not aligned
                         self.pushupCount += 1
                         print(self.pushupCount)
+
+                    if self.pushupCount == 1:
+                        self.start_time = time.time()
+                        self.end_time = self.start_time + TEST_TIME
+                        self.timer = True
+                        self.timer_has_started = True
+                        self.counterGUI = True
 
                 elif self.isCalibrated == False:
                     # Run distance calibration
