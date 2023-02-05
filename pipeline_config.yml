@@ -1,7 +1,7 @@
 nodes:
   - input.visual:
       # source: "hemanth_vid.mov"
-      source: "edly_vid2.mp4"
+      source: "edly_vid4.mp4"
       # source: 0
   - model.posenet
   - dabble.fps
