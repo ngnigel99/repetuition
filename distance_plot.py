@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from src.custom_nodes.dabble.joint_coordinates import depth_file_denoizer
 # given a text file containing distances, create x and y values for plotting on a graph
-THRESHOLD = 10
+
 with open('distance.txt') as f:
     data = f.readlines()
     data = [float(x.strip()) for x in data]

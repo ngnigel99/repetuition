@@ -2,5 +2,6 @@ pipeline_config.yml
 *.pyc
 *.mov
 *.mp4
-*.txt
+angle.txt
+distance.txt
 *.wav

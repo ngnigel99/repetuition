@@ -12,7 +12,6 @@ import numpy as np
 import os.path
 import statistics
 
-
 # GLOBAL VARIABLES
 # font
 FONT = cv2.FONT_HERSHEY_SIMPLEX
@@ -28,7 +27,7 @@ BLUE = (255, 0, 0)
 GREY = (178, 178, 178)
 
 # threshold
-THRESHOLD = 0.4
+THRESHOLD = 0.8
 
 # test time given
 TEST_TIME = 60
@@ -482,8 +481,8 @@ class Node(AbstractNode):
             self.pushupTopHeight, self.pushupBottomHeight = depth_file_denoizer(
                 'distance.txt')
             difference = self.pushupTopHeight - self.pushupBottomHeight
-            self.pushupTopHeight -= 0.3*difference
-            self.pushupBottomHeight += 0.2*difference
+            self.pushupTopHeight -= 0.1 * difference
+            self.pushupBottomHeight += 0.1 * difference
             print("Push up top height = ", self.pushupTopHeight)
             print("Push up bottom height = ", self.pushupBottomHeight)
         else:
