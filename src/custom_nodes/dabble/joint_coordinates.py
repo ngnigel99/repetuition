@@ -89,8 +89,6 @@ def get_angle(a: tuple, b: tuple, c: tuple):
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-    # with open("distance.txt", "a") as f:
-    #     f.write(str(distance) + "\n")
     return distance
 
 
