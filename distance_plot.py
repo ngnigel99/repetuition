@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
+from src.custom_nodes.dabble.joint_coordinates import depth_file_denoizer
 # given a text file containing distances, create x and y values for plotting on a graph
 THRESHOLD = 10
 with open('distance.txt') as f:
@@ -15,6 +16,11 @@ with open('distance.txt') as f:
     # print(min_point, max_point)
     # x_1 = np.arange(0, len(arr), 1)
     plt.scatter(x, data, label='distance', c='g')
+
+maxdepth, mindepth = depth_file_denoizer('distance.txt')
+
+plt.axhline(y = maxdepth)
+plt.axhline(y = mindepth)
 
 plt.legend()
 plt.show()

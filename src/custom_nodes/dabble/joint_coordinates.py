@@ -89,8 +89,6 @@ def get_angle(a: tuple, b: tuple, c: tuple):
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-    # with open("distance.txt", "a") as f:
-    #     f.write(str(distance) + "\n")
     return distance
 
 
@@ -390,9 +388,6 @@ def depth_file_denoizer(coordinates_txt_file: str):
     denoized_data = [x for x in data if lower_bound <= x <= upper_bound]
 
     return max(denoized_data), min(denoized_data)
-    # open(coordinates_txt_file, 'w').close()
-    # with open(coordinates_txt_file, 'w') as file:
-    #     file.write(str(max(denoized_data))+"\n"+str(min(denoized_data)) + "\n")
 
 
 def check_orientation(img_size: tuple, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle) -> bool:
@@ -464,6 +459,8 @@ class Node(AbstractNode):
             difference = self.pushupTopHeight - self.pushupBottomHeight
             self.pushupTopHeight -= 0.3*difference
             self.pushupBottomHeight += 0.2*difference
+            print("Push up top height = ", self.pushupTopHeight)
+            print("Push up bottom height = ", self.pushupBottomHeight)
         else:
             self.isCalibrated = False
             print('Calibrating distance now...')
@@ -611,13 +608,6 @@ class Node(AbstractNode):
                         right_wrist, right_shoulder)
 
                 if self.isCalibrated:
-                    # start timer on first pushup
-                    if self.pushupCount == 1:
-                        self.start_time = time.time()
-                        self.end_time = self.start_time + TEST_TIME
-                        self.timer = True
-                        self.timer_has_started = True
-                        self.counterGUI = True
 
                     if right_shoulder and right_hip and right_knee:
                         self.spineAligned = check_spine_alignment(
@@ -642,6 +632,13 @@ class Node(AbstractNode):
                         self.pushupCount += 1
                         print(self.pushupCount)
 
+                    if self.pushupCount == 1:
+                        self.start_time = time.time()
+                        self.end_time = self.start_time + TEST_TIME
+                        self.timer = True
+                        self.timer_has_started = True
+                        self.counterGUI = True
+
                 elif self.isCalibrated == False:
                     # Run distance calibration
                     # print out on a text file called distance.txt
@@ -653,6 +650,8 @@ class Node(AbstractNode):
                 if right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                     self.orientationisright = check_orientation(
                         img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
+                    print("Orientation is right!")
+                else:
                     print('Face your right to the camera!')
 
         return {}
