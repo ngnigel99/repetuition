@@ -1,16 +1,11 @@
 nodes:
   - input.visual:
       # source: "hemanth_vid.mov"
-      source: "edly_vid.mp4"
+      source: "edly_vid2.mp4"
       # source: 0
-  - model.yolo
-  # - model.movenet:
-  #     model_format: tensorrt
-  #     model_type: singlepose_lightning
   - model.posenet
   - dabble.fps
   - custom_nodes.dabble.joint_coordinates # --> we use this as reference
-  # - custom_nodes.draw.timer (timer custom node)
   - draw.poses
   # - draw.legend:
   #     show: ["fps"]
