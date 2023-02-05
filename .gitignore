@@ -1,4 +1,6 @@
+pipeline_config.yml
 *.pyc
-hemanth_vid.mov
-edly_vid.mp4
+*.mov
+*.mp4
 *.txt
+*.wav

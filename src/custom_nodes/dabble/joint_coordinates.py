@@ -83,8 +83,8 @@ def get_angle(a: tuple, b: tuple, c: tuple):
 
 def get_distance(a: tuple, b: tuple):
     distance = math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
-    with open("distance.txt", "a") as f:
-        f.write(str(distance) + "\n")
+    # with open("distance.txt", "a") as f:
+    #     f.write(str(distance) + "\n")
     return distance
 
 def getAngleRange(inputFilePath):
@@ -591,7 +591,8 @@ class Node(AbstractNode):
                         # Run calibration
                         # print out on a text file called distance.txt
                         with open("distance.txt", "a") as f:
-                            f.write(str(wrist_to_shoulder_distance) + "\n")
+                            if wrist_to_shoulder_distance > 0:
+                                f.write(str(wrist_to_shoulder_distance) + "\n")
 
                     if right_shoulder and right_hip and right_knee:
                         if self.angleCalibrated:
@@ -616,7 +617,8 @@ class Node(AbstractNode):
                     # Run distance calibration
                     # print out on a text file called distance.txt
                     with open("distance.txt", "a") as f:
-                        f.write(str(wrist_to_shoulder_distance) + "\n")
+                        if wrist_to_shoulder_distance > 0:
+                            f.write(str(wrist_to_shoulder_distance) + "\n")
 
             elif right_wrist and right_shoulder and right_ankle and left_wrist and left_shoulder and left_ankle:
                 self.orientationisright = check_orientation(img_size, right_wrist, right_shoulder, right_ankle, left_wrist, left_shoulder, left_ankle)
