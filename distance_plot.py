@@ -8,19 +8,25 @@ with open('distance.txt') as f:
     data = f.readlines()
     data = [float(x.strip()) for x in data]
     x = np.arange(0, len(data), 1)
-
-    # arr = np.array(data).reshape(-1, 1)
-    # arr = arr[arr[:, 0] < 1500]
-    # max_point = max(arr) - THRESHOLD
-    # min_point = min(arr) - THRESHOLD
-    # print(min_point, max_point)
-    # x_1 = np.arange(0, len(arr), 1)
     plt.scatter(x, data, label='distance', c='g')
 
 maxdepth, mindepth = depth_file_denoizer('distance.txt')
 
+data_within_range = []
+x_within_range = []
+
+for i in range(len(data)):
+    if mindepth <= data[i] <= maxdepth:
+        data_within_range.append(data[i])
+        x_within_range.append(x[i])
+
+plt.scatter(x_within_range, data_within_range, label='de-noised distance', c='b')
+
 plt.axhline(y = maxdepth)
 plt.axhline(y = mindepth)
+
+plt.ylabel("pixel distance")
+plt.xlabel("sample number")
 
 plt.legend()
 plt.show()
